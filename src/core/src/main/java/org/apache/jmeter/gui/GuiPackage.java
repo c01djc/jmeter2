@@ -474,6 +474,14 @@ public final class GuiPackage implements LocaleChangeListener, HistoryListener {
     }
 
     /**
+     * Mark the current editor as having unsaved GUI changes so the next
+     * {@link #updateCurrentNode()} writes them to the test element.
+     */
+    public void markCurrentGuiDirty() {
+        currentNodeUpdated = false;
+    }
+
+    /**
      * This method should be called in order for GuiPackage to change the
      * current node. This will save any changes made to the earlier node before
      * choosing the new node.
@@ -558,6 +566,7 @@ public final class GuiPackage implements LocaleChangeListener, HistoryListener {
         HashTree hashTree = treeModel.addSubTree(subTree, treeListener.getCurrentNode());
         undoHistory.clear();
         undoHistory.add(this.treeModel, "Loaded tree");
+        retranslateDefaultElementNames();
         return hashTree;
     }
 

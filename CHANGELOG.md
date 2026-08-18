@@ -1,5 +1,11 @@
 # JMeter2 Changelog
 
+## Unreleased
+
+### Usability
+- HTTP request **Body Data** has find / locate / replace (Ctrl+F in the editor, F3 / Shift+F3)
+- Search Tree Next/Previous walks each match in the current editor (not only the next tree node)
+
 ## 1.0.0
 
 Based on Apache JMeter 5.6.3.
