@@ -1,0 +1,48 @@
+name: Bug report
+description: 报告 JMeter2 的问题
+labels:
+  - defect
+body:
+  - type: markdown
+    attributes:
+      value: |
+        请尽量写全。这是 **JMeter2** 独立 fork，请不要把本 fork 的 bug 报到 Apache JMeter 官方。
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望行为
+      description: 你期望 JMeter2 做什么
+      placeholder: 也可附日志、截图或录屏
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际行为
+      description: 实际发生了什么
+      placeholder: 例如 jmeter.log、截图
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      description: 若与第三方插件有关，可先去掉插件再试
+      placeholder: 也可附 .jmx / 日志 / 截图
+    validations:
+      required: true
+  - type: input
+    id: jmeter-version
+    attributes:
+      label: JMeter2 版本
+      description: 例如 1.0.0（Help → About）
+      placeholder: 1.0.0
+    validations:
+      required: true
+  - type: input
+    id: java-version
+    attributes:
+      label: Java 版本
+      description: `java -version` 的输出
+      placeholder: ex. openjdk version "17"
+  - type: input
+    id: os-version
+    attributes:
+      label: 操作系统
+      placeholder: ex. Windows 10 22H2

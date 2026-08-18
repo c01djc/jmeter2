@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="480" viewBox="0 0 400 480">
+  <title>JMeter2 mascot</title>
+  <ellipse cx="200" cy="458" rx="118" ry="14" fill="#B8D4E8"/>
+
+  <path d="M258 330 C310 312 328 268 300 236" fill="none" stroke="#111111" stroke-width="16" stroke-linecap="round"/>
+
+  <ellipse cx="200" cy="352" rx="62" ry="50" fill="#111111"/>
+  <circle cx="168" cy="398" r="18" fill="#111111"/>
+  <circle cx="200" cy="404" r="17" fill="#111111"/>
+  <circle cx="232" cy="398" r="18" fill="#111111"/>
+  <circle cx="184" cy="404" r="16" fill="#111111"/>
+
+  <rect x="168" y="286" width="64" height="18" rx="9" fill="#D11123"/>
+
+  <ellipse cx="118" cy="210" rx="34" ry="62" fill="#111111" transform="rotate(-18 118 210)"/>
+  <ellipse cx="282" cy="210" rx="34" ry="62" fill="#111111" transform="rotate(18 282 210)"/>
+  <ellipse cx="122" cy="218" rx="16" ry="36" fill="#F3C7A8" transform="rotate(-18 122 218)"/>
+  <ellipse cx="278" cy="218" rx="16" ry="36" fill="#F3C7A8" transform="rotate(18 278 218)"/>
+
+  <circle cx="200" cy="168" r="102" fill="#111111"/>
+  <rect x="196" y="28" width="8" height="48" rx="4" fill="#111111"/>
+  <circle cx="200" cy="26" r="12" fill="#D11123"/>
+
+  <circle cx="200" cy="186" r="62" fill="#F3C7A8"/>
+  <circle cx="176" cy="176" r="15" fill="#8B3A2A"/>
+  <circle cx="224" cy="176" r="15" fill="#8B3A2A"/>
+  <circle cx="171" cy="171" r="4.5" fill="#FFFFFF"/>
+  <circle cx="219" cy="171" r="4.5" fill="#FFFFFF"/>
+  <ellipse cx="200" cy="202" rx="7" ry="5.5" fill="#111111"/>
+  <path d="M186 216 Q200 228 214 216" fill="none" stroke="#111111" stroke-width="3" stroke-linecap="round"/>
+</svg>

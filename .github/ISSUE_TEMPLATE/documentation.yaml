@@ -1,0 +1,25 @@
+name: Feedback about the docs
+description: 文档写错或不好懂
+labels:
+  - documentation
+body:
+  - type: markdown
+    attributes:
+      value: |
+        本 fork 说明以仓库 README / CHANGELOG 为准。上游手册仍来自 Apache JMeter。
+  - type: input
+    id: url
+    attributes:
+      label: 文档位置
+      description: 仓库文件路径，或上游手册链接
+      placeholder: ex. README.md 或 printable_docs/...
+    validations:
+      required: true
+  - type: textarea
+    id: feedback
+    attributes:
+      label: 反馈
+      description: 哪里不清楚或有误
+      placeholder: 也可附截图
+    validations:
+      required: true

@@ -1,0 +1,49 @@
+name: Feature Request
+description: 给 JMeter2 提改进想法
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        请说明使用场景。这是 **JMeter2** 独立 fork，不是 Apache JMeter 官方项目。
+  - type: textarea
+    id: use-case
+    attributes:
+      label: 使用场景
+      description: 你在什么情况下需要这个能力
+      placeholder: 描述场景
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: 可能的方案
+      description: 可选。场景说明比方案更重要。
+      placeholder: 描述你希望的做法
+    validations:
+      required: false
+  - type: textarea
+    id: workarounds
+    attributes:
+      label: 现有变通办法
+      placeholder: 你现在是怎么绕过的
+    validations:
+      required: false
+  - type: input
+    id: jmeter-version
+    attributes:
+      label: JMeter2 版本
+      placeholder: 1.0.0
+    validations:
+      required: true
+  - type: input
+    id: java-version
+    attributes:
+      label: Java 版本
+      placeholder: ex. openjdk version "17"
+  - type: input
+    id: os-version
+    attributes:
+      label: 操作系统
+      placeholder: ex. Windows 10 22H2

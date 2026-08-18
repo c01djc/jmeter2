@@ -1,0 +1,47 @@
+name: Regression
+description: 以前能用，现在坏了
+labels:
+  - regression
+body:
+  - type: markdown
+    attributes:
+      value: |
+        请尽量写全。这是 **JMeter2** 独立 fork，请不要报到 Apache JMeter 官方。
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望行为（以前的表现）
+      placeholder: 也可附日志、截图
+  - type: textarea
+    id: actual
+    attributes:
+      label: 现在的实际行为
+      placeholder: 例如 jmeter.log
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+    validations:
+      required: true
+  - type: input
+    id: last-good
+    attributes:
+      label: 上次正常的版本
+      placeholder: ex. 2.1.0 或上游 5.6.3
+  - type: input
+    id: jmeter-version
+    attributes:
+      label: 当前 JMeter2 版本
+      placeholder: 1.0.0
+    validations:
+      required: true
+  - type: input
+    id: java-version
+    attributes:
+      label: Java 版本
+      placeholder: ex. openjdk version "17"
+  - type: input
+    id: os-version
+    attributes:
+      label: 操作系统
+      placeholder: ex. Windows 10 22H2

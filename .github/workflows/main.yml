@@ -1,0 +1,15 @@
+# Apache JMeter's full matrix CI is disabled in this fork.
+# It needs ASF secrets, many jobs, and would fail/waste Actions minutes.
+# Validate the wrapper on push; pack locally with:
+#   gradlew :src:dist:distZip -PchecksumIgnore -Prelease
+name: CI
+
+on:
+  workflow_dispatch:
+
+jobs:
+  skipped:
+    name: Official matrix CI disabled
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "JMeter2 fork — full Apache CI is not run. Use workflow_dispatch only as a placeholder."
