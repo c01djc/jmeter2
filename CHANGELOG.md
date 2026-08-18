@@ -3,8 +3,9 @@
 ## Unreleased
 
 ### Usability
-- HTTP request **Body Data** has find / locate / replace (Ctrl+F in the editor, F3 / Shift+F3)
-- Search Tree Next/Previous walks each match in the current editor (not only the next tree node)
+- HTTP 请求 **消息体数据** 可查找、定位、替换（Ctrl+F、F3 / Shift+F3）；不必依赖结构树搜索
+- 结构树搜索的下一个 / 上一个会先在当前编辑器里逐处跳转
+- 补全工具菜单等中文；打开脚本时把默认英文节点名翻成当前语言
 
 ## 1.0.0
 
