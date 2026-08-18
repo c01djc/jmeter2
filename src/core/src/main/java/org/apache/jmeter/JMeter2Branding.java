@@ -53,7 +53,7 @@ public final class JMeter2Branding {
     /** Fork author (GitHub username). */
     public static final String AUTHOR_NAME = "c01djc";
 
-    public static final String AUTHOR_GITHUB_URL = "https://github.com/c01djc";
+    public static final String AUTHOR_GITHUB_URL = "https://github.com/c01djc/jmeter2";
 
     /** Upstream Apache JMeter release this fork is based on. */
     public static final String UPSTREAM_BASE_VERSION = "5.6.3";
