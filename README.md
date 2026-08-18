@@ -1,5 +1,9 @@
 # JMeter2
 
+<p align="center">
+  <img src="xdocs/images/splash-jmeter2.png" alt="JMeter2 startup screen" width="720">
+</p>
+
 **JMeter2 is an independent fork. It is not an Apache Software Foundation release and is not affiliated with Apache JMeter.**
 
 Based on [Apache JMeter](https://jmeter.apache.org/) 5.6.3 (Apache License 2.0).  
