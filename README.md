@@ -9,7 +9,7 @@
 Based on [Apache JMeter](https://jmeter.apache.org/) 5.6.3 (Apache License 2.0).  
 Current version: **1.0.0**
 
-JMeter2 是团队内部使用中改出来的独立版本：官方功能不好用的地方做了调整，旧版本兼容性不好的地方做了更新。问题请提到 **本仓库**，不要去 Apache JMeter 的 JIRA / 邮件列表报这个 fork 的 bug。
+JMeter2 是基于 Apache JMeter 5.6.3 的独立开源 fork，由 [c01djc](https://github.com/c01djc/jmeter2) 维护，**不是** Apache 官方发行版。相对上游，主要打磨了中文使用体验、界面易用性和部分兼容性问题。使用本项目遇到问题请在 **本仓库** 提 Issue，请不要报到 Apache JMeter 的 JIRA 或邮件列表。
 
 官方项目：https://jmeter.apache.org/
 
