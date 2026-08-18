@@ -110,6 +110,8 @@ public class SearchTreeDialog extends JDialog implements ActionListener { // NOS
     private final List<JMeterTreeNode> lastSearchResult = new ArrayList<>();
     private int currentSearchIndex;
 
+    private final transient SearchGuiHighlighter editorHighlighter = new SearchGuiHighlighter();
+
     @VisibleForTesting
     public SearchTreeDialog() {
         super();
@@ -261,8 +263,13 @@ public class SearchTreeDialog extends JDialog implements ActionListener { // NOS
             if(!lastSearchResult.isEmpty()) {
                 doReplace();
             }
-            doNavigateToSearchResult(true);
+            if (editorHighlighter.getCurrentIndex() < 0) {
+                doNavigateToSearchResult(true);
+            } else {
+                updateEditorStatus();
+            }
         } else if(source == resetSearchButton) {
+            editorHighlighter.reset();
             doResetSearch(e);
         }
     }
@@ -279,20 +286,34 @@ public class SearchTreeDialog extends JDialog implements ActionListener { // NOS
      *
      */
     private void doReplace() {
-        GuiPackage.getInstance().updateCurrentNode();
         int nbReplacements = 0;
         if(currentSearchIndex >= 0) {
-            JMeterTreeNode currentNode = lastSearchResult.get(currentSearchIndex);
-            if(currentNode != null) {
-                String wordToSearch = searchTF.getText();
-                String wordToReplace = replaceTF.getText();
-                String regex = isRegexpCB.isSelected() ? wordToSearch : Pattern.quote(wordToSearch);
-                boolean caseSensitiveReplacement = isCaseSensitiveCB.isSelected();
-                Pair<Integer, JMeterTreeNode> pair = doReplacementInCurrentNode(currentNode, regex, wordToReplace, caseSensitiveReplacement);
-                if(pair != null) {
-                    nbReplacements = pair.getLeft();
-                    GuiPackage.getInstance().updateCurrentGui();
-                    GuiPackage.getInstance().getMainFrame().repaint();
+            int inEditor = editorHighlighter.replaceCurrent(replaceTF.getText());
+            if (inEditor > 0) {
+                nbReplacements = inEditor;
+                GuiPackage guiPackage = GuiPackage.getInstance();
+                guiPackage.markCurrentGuiDirty();
+                guiPackage.updateCurrentNode();
+                guiPackage.getMainFrame().repaint();
+            } else {
+                GuiPackage.getInstance().updateCurrentNode();
+                JMeterTreeNode currentNode = lastSearchResult.get(currentSearchIndex);
+                if(currentNode != null) {
+                    String wordToSearch = searchTF.getText();
+                    String wordToReplace = replaceTF.getText();
+                    String regex = isRegexpCB.isSelected() ? wordToSearch : Pattern.quote(wordToSearch);
+                    boolean caseSensitiveReplacement = isCaseSensitiveCB.isSelected();
+                    Pair<Integer, JMeterTreeNode> pair = doReplacementInCurrentNode(currentNode, regex, wordToReplace, caseSensitiveReplacement);
+                    if(pair != null) {
+                        nbReplacements = pair.getLeft();
+                        GuiPackage.getInstance().updateCurrentGui();
+                        editorHighlighter.enterCurrentGui(
+                                searchTF.getText(),
+                                isCaseSensitiveCB.isSelected(),
+                                isRegexpCB.isSelected(),
+                                true);
+                        GuiPackage.getInstance().getMainFrame().repaint();
+                    }
                 }
             }
         }
@@ -315,7 +336,16 @@ public class SearchTreeDialog extends JDialog implements ActionListener { // NOS
             Searcher searcher = createSearcher(wordToSearch);
             searchInTree(GuiPackage.getInstance(), searcher, wordToSearch);
         }
+        if(lastSearchResult.isEmpty()) {
+            statusLabel.setText(MessageFormat.format(
+                    JMeterUtils.getResString("search_tree_matches"), 0));
+            return null;
+        }
         if(!lastSearchResult.isEmpty()) {
+            if (currentSearchIndex >= 0 && editorHighlighter.navigate(isNext)) {
+                updateEditorStatus();
+                return lastSearchResult.get(currentSearchIndex);
+            }
             if(isNext) {
                 currentSearchIndex = ++currentSearchIndex % lastSearchResult.size();
             } else {
@@ -327,13 +357,34 @@ public class SearchTreeDialog extends JDialog implements ActionListener { // NOS
             guiPackage.getMainFrame().getTree().setSelectionPath(selection);
             guiPackage.getMainFrame().getTree().scrollPathToVisible(selection);
             guiPackage.updateCurrentGui();
-            SearchGuiHighlighter.focusMatchInCurrentGui(
+            editorHighlighter.enterCurrentGui(
                     searchTF.getText(),
                     isCaseSensitiveCB.isSelected(),
-                    isRegexpCB.isSelected());
+                    isRegexpCB.isSelected(),
+                    isNext);
+            updateEditorStatus();
             return selectedNode;
         }
         return null;
+    }
+
+    private void updateEditorStatus() {
+        int nodes = lastSearchResult.size();
+        if (nodes == 0 || currentSearchIndex < 0) {
+            return;
+        }
+        int nodePos = currentSearchIndex + 1;
+        int editorCount = editorHighlighter.getMatchCount();
+        int editorPos = editorHighlighter.getCurrentIndex() + 1;
+        if (editorCount > 0 && editorPos > 0) {
+            statusLabel.setText(MessageFormat.format(
+                    JMeterUtils.getResString("search_tree_node_and_editor"),
+                    nodePos, nodes, editorPos, editorCount));
+        } else {
+            statusLabel.setText(MessageFormat.format(
+                    JMeterUtils.getResString("search_tree_node_only"),
+                    nodePos, nodes));
+        }
     }
 
     /**
@@ -402,6 +453,7 @@ public class SearchTreeDialog extends JDialog implements ActionListener { // NOS
         this.currentSearchIndex = -1;
         this.lastSearchResult.clear();
         this.lastSearchResult.addAll(nodes);
+        this.editorHighlighter.reset();
         return Pair.of(numberOfMatches, nodes);
     }
 

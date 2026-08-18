@@ -17,19 +17,39 @@
 
 package org.apache.jmeter.gui.util;
 
+import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
+import java.text.MessageFormat;
+import java.util.List;
 
+import javax.swing.AbstractAction;
+import javax.swing.ActionMap;
+import javax.swing.BorderFactory;
+import javax.swing.InputMap;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.JToolBar;
+import javax.swing.KeyStroke;
+import javax.swing.UIManager;
 
+import org.apache.jmeter.gui.GuiPackage;
+import org.apache.jmeter.gui.action.KeyStrokes;
+import org.apache.jmeter.gui.action.SearchTextMatches;
 import org.apache.jmeter.util.JMeterUtils;
 import org.apache.jorphan.gui.JFactory;
 import org.fife.ui.rtextarea.SearchContext;
 import org.fife.ui.rtextarea.SearchEngine;
+
+import net.miginfocom.swing.MigLayout;
 
 /**
  * Search toolbar associated to {@link JSyntaxTextArea}
@@ -39,10 +59,21 @@ public final class JSyntaxSearchToolBar implements ActionListener {
     public static final Color LIGHT_RED = new Color(0xFF, 0x80, 0x80);
 
     public static final String FIND_ACTION = "Find";
+    public static final String FIND_PREVIOUS_ACTION = "FindPrevious";
+    public static final String REPLACE_ACTION = "Replace";
+    public static final String REPLACE_ALL_ACTION = "ReplaceAll";
+
+    private static final Color DIVIDER = new Color(0xD0, 0xD0, 0xD0);
 
     private JToolBar toolBar;
 
+    private JComponent barComponent;
+
     private JTextField searchField;
+
+    private JTextField replaceField;
+
+    private JLabel statusLabel;
 
     private JCheckBox regexCB;
 
@@ -53,55 +84,254 @@ public final class JSyntaxSearchToolBar implements ActionListener {
      */
     private final JSyntaxTextArea dataField;
 
+    private final boolean enableReplace;
+
     /**
      * @param dataField {@link JSyntaxTextArea} to use for searching
      */
     public JSyntaxSearchToolBar(JSyntaxTextArea dataField) {
+        this(dataField, false);
+    }
+
+    /**
+     * @param dataField {@link JSyntaxTextArea} to use for searching
+     * @param enableReplace true to show replace field and replace buttons
+     */
+    public JSyntaxSearchToolBar(JSyntaxTextArea dataField, boolean enableReplace) {
         this.dataField = dataField;
+        this.enableReplace = enableReplace;
         init();
+        if (enableReplace) {
+            installKeyBindings(dataField);
+        }
+    }
+
+    /**
+     * Body-data editor with find / locate / replace above the text.
+     *
+     * @param textArea target editor
+     * @return panel containing the toolbar and scrollable text area
+     */
+    public static JPanel wrapWithFindReplace(JSyntaxTextArea textArea) {
+        JSyntaxSearchToolBar bar = new JSyntaxSearchToolBar(textArea, true);
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.add(bar.getBarComponent(), BorderLayout.NORTH);
+        panel.add(JTextScrollPane.getInstance(textArea), BorderLayout.CENTER);
+        return panel;
     }
 
     private void init() {
-        this.searchField = new JTextField(30);
-        JFactory.small(searchField);
-        final JButton findButton = new JButton(JMeterUtils.getResString("search_text_button_find"));
-        JFactory.small(findButton);
-        findButton.setActionCommand(FIND_ACTION);
-        findButton.addActionListener(this);
+        this.searchField = new JTextField();
         regexCB = new JCheckBox(JMeterUtils.getResString("search_text_chkbox_regexp"));
-        JFactory.small(regexCB);
-
         matchCaseCB = new JCheckBox(JMeterUtils.getResString("search_text_chkbox_case"));
-        JFactory.small(matchCaseCB);
+        searchField.addActionListener(e -> find(true));
+
+        if (!enableReplace) {
+            JFactory.small(searchField);
+            JFactory.small(regexCB);
+            JFactory.small(matchCaseCB);
+            this.toolBar = new JToolBar();
+            toolBar.setFloatable(false);
+            JFactory.small(toolBar);
+            toolBar.add(searchField);
+            toolBar.add(createButton("search_text_button_find", FIND_ACTION, true));
+            toolBar.add(matchCaseCB);
+            toolBar.add(regexCB);
+            this.barComponent = toolBar;
+            return;
+        }
+
+        this.replaceField = new JTextField();
+        replaceField.addActionListener(e -> replace(false));
+        statusLabel = new JLabel(" ");
+        statusLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
+
+        JPanel panel = new JPanel(new MigLayout(
+                "insets 8 10 8 10, fillx, gapx 8, gapy 6",
+                "[][grow,fill][][][][][right]"));
+        panel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 1, 0, DIVIDER),
+                BorderFactory.createEmptyBorder()));
+
+        panel.add(new JLabel(JMeterUtils.getResString("search_text_field")));
+        panel.add(searchField, "growx");
+        panel.add(createButton("search_next", FIND_ACTION, false));
+        panel.add(createButton("search_previous", FIND_PREVIOUS_ACTION, false));
+        panel.add(matchCaseCB);
+        panel.add(regexCB);
+        panel.add(statusLabel, "wrap");
+
+        panel.add(new JLabel(JMeterUtils.getResString("search_text_replace")));
+        panel.add(replaceField, "growx");
+        panel.add(createButton("search_replace_current", REPLACE_ACTION, false));
+        panel.add(createButton("search_replace_all", REPLACE_ALL_ACTION, false), "wrap");
 
         this.toolBar = new JToolBar();
         toolBar.setFloatable(false);
-        JFactory.small(toolBar);
-        toolBar.add(searchField);
-        toolBar.add(findButton);
-        toolBar.add(matchCaseCB);
-        toolBar.add(regexCB);
-        searchField.addActionListener(e -> findButton.doClick(0));
+        this.barComponent = panel;
     }
 
+    private JComponent getBarComponent() {
+        return barComponent;
+    }
+
+    private JButton createButton(String labelKey, String action, boolean small) {
+        JButton button = new JButton(JMeterUtils.getResString(labelKey));
+        button.setActionCommand(action);
+        button.addActionListener(this);
+        if (small) {
+            JFactory.small(button);
+        } else {
+            button.setMargin(new Insets(3, 10, 3, 10));
+        }
+        return button;
+    }
+
+    private void installKeyBindings(JSyntaxTextArea area) {
+        InputMap inputMap = area.getInputMap(JComponent.WHEN_FOCUSED);
+        ActionMap actionMap = area.getActionMap();
+        inputMap.put(KeyStrokes.SEARCH_TREE, "jmeter2-find-in-editor");
+        actionMap.put("jmeter2-find-in-editor", new AbstractAction() {
+            private static final long serialVersionUID = 1L;
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                searchField.requestFocusInWindow();
+                searchField.selectAll();
+            }
+        });
+        KeyStroke f3 = KeyStroke.getKeyStroke(KeyEvent.VK_F3, 0);
+        KeyStroke shiftF3 = KeyStroke.getKeyStroke(KeyEvent.VK_F3, InputEvent.SHIFT_DOWN_MASK);
+        inputMap.put(f3, "jmeter2-find-next");
+        actionMap.put("jmeter2-find-next", new AbstractAction() {
+            private static final long serialVersionUID = 1L;
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                find(true);
+            }
+        });
+        inputMap.put(shiftF3, "jmeter2-find-prev");
+        actionMap.put("jmeter2-find-prev", new AbstractAction() {
+            private static final long serialVersionUID = 1L;
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                find(false);
+            }
+        });
+    }
+
+    /**
+     * Find-only toolbar used by result viewers. Must stay {@link JToolBar}
+     * for binary compatibility with ApacheJMeter_components.
+     *
+     * @return search toolbar
+     */
     public JToolBar getToolBar() {
         return toolBar;
     }
 
     @Override
     public void actionPerformed(ActionEvent evt) {
+        String command = evt.getActionCommand();
+        if (FIND_ACTION.equals(command)) {
+            find(true);
+        } else if (FIND_PREVIOUS_ACTION.equals(command)) {
+            find(false);
+        } else if (REPLACE_ACTION.equals(command)) {
+            replace(false);
+        } else if (REPLACE_ALL_ACTION.equals(command)) {
+            replace(true);
+        }
+    }
+
+    private void find(boolean forward) {
         String text = searchField.getText();
         toggleSearchField(searchField, true);
-
-        if (!text.isEmpty()) {
-            SearchContext context = createSearchContext(
-                    text, true, matchCaseCB.isSelected(), regexCB.isSelected());
-            boolean found = SearchEngine.find(dataField, context).wasFound();
-            toggleSearchField(searchField, found);
-            if(!found) {
-                dataField.setCaretPosition(0);
+        if (text.isEmpty()) {
+            updateStatus(0, 0);
+            return;
+        }
+        SearchContext context = createSearchContext(
+                text, forward, matchCaseCB.isSelected(), regexCB.isSelected());
+        context.setReplaceWith(replaceField == null ? "" : replaceField.getText());
+        boolean found = SearchEngine.find(dataField, context).wasFound();
+        if (!found && dataField.getDocument().getLength() > 0) {
+            int saved = dataField.getCaretPosition();
+            dataField.setCaretPosition(forward ? 0 : dataField.getDocument().getLength());
+            found = SearchEngine.find(dataField, context).wasFound();
+            if (!found) {
+                dataField.setCaretPosition(saved);
             }
         }
+        toggleSearchField(searchField, found);
+        updateOccurrenceStatus();
+        if (found) {
+            dataField.requestFocusInWindow();
+        }
+    }
+
+    private void replace(boolean all) {
+        String text = searchField.getText();
+        if (text.isEmpty() || replaceField == null) {
+            return;
+        }
+        SearchContext context = createSearchContext(
+                text, true, matchCaseCB.isSelected(), regexCB.isSelected());
+        context.setReplaceWith(replaceField.getText());
+        if (all) {
+            SearchEngine.replaceAll(dataField, context);
+        } else {
+            boolean replaced = SearchEngine.replace(dataField, context).getCount() > 0;
+            if (!replaced) {
+                find(true);
+                SearchEngine.replace(dataField, context);
+            }
+        }
+        GuiPackage guiPackage = GuiPackage.getInstance();
+        if (guiPackage != null) {
+            guiPackage.markCurrentGuiDirty();
+        }
+        updateOccurrenceStatus();
+        dataField.requestFocusInWindow();
+    }
+
+    private void updateOccurrenceStatus() {
+        String needle = searchField.getText();
+        if (needle.isEmpty()) {
+            updateStatus(0, 0);
+            return;
+        }
+        List<SearchTextMatches.Span> spans = SearchTextMatches.findAll(
+                dataField.getText(), needle, matchCaseCB.isSelected(), regexCB.isSelected());
+        int current = 0;
+        int caret = dataField.getSelectionStart();
+        for (int i = 0; i < spans.size(); i++) {
+            SearchTextMatches.Span span = spans.get(i);
+            if (span.getStart() == caret || (span.getStart() <= caret && caret < span.getEnd())) {
+                current = i + 1;
+                break;
+            }
+            if (span.getStart() > caret && current == 0) {
+                current = i + 1;
+                break;
+            }
+        }
+        if (current == 0 && !spans.isEmpty()) {
+            current = 1;
+        }
+        updateStatus(current, spans.size());
+        toggleSearchField(searchField, !spans.isEmpty());
+    }
+
+    private void updateStatus(int current, int total) {
+        if (statusLabel == null) {
+            return;
+        }
+        if (total <= 0) {
+            statusLabel.setText(" ");
+            return;
+        }
+        statusLabel.setText(MessageFormat.format(
+                JMeterUtils.getResString("search_text_occurrence"), current, total));
     }
 
     void toggleSearchField(JTextField textToFindField, boolean matchFound) {
@@ -121,7 +351,7 @@ public final class JSyntaxSearchToolBar implements ActionListener {
         context.setMatchCase(matchCase);
         context.setRegularExpression(isRegex);
         context.setSearchForward(forward);
-        context.setMarkAll(false);
+        context.setMarkAll(true);
         context.setSearchSelectionOnly(false);
         context.setWholeWord(false);
         return context;

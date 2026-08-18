@@ -38,8 +38,8 @@ import org.apache.jmeter.gui.JBooleanPropertyEditor;
 import org.apache.jmeter.gui.JCheckBoxBinding;
 import org.apache.jmeter.gui.JLabeledFieldBinding;
 import org.apache.jmeter.gui.util.HorizontalPanel;
+import org.apache.jmeter.gui.util.JSyntaxSearchToolBar;
 import org.apache.jmeter.gui.util.JSyntaxTextArea;
-import org.apache.jmeter.gui.util.JTextScrollPane;
 import org.apache.jmeter.protocol.http.gui.HTTPArgumentsPanel;
 import org.apache.jmeter.protocol.http.gui.HTTPFileArgsPanel;
 import org.apache.jmeter.protocol.http.sampler.HTTPSamplerBase;
@@ -429,7 +429,8 @@ public class UrlConfigGui extends JPanel implements ChangeListener {
         if(showRawBodyPane) {
             tabRawBodyIndex = ++indx;
             postBodyContent = JSyntaxTextArea.getInstance(30, 50);// $NON-NLS-1$
-            postContentTabbedPane.add(JMeterUtils.getResString("post_body"), JTextScrollPane.getInstance(postBodyContent));// $NON-NLS-1$
+            postContentTabbedPane.add(JMeterUtils.getResString("post_body"),
+                    JSyntaxSearchToolBar.wrapWithFindReplace(postBodyContent));// $NON-NLS-1$
         }
 
         if(showFileUploadPane) {

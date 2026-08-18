@@ -19,84 +19,199 @@ package org.apache.jmeter.gui.action;
 
 import java.awt.Component;
 import java.awt.Container;
+import java.awt.Rectangle;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
+import javax.swing.JPasswordField;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
+import javax.swing.text.BadLocationException;
 import javax.swing.text.JTextComponent;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.jmeter.gui.GuiPackage;
 import org.apache.jmeter.gui.JMeterGUIComponent;
+import org.apache.jmeter.gui.util.JSyntaxTextArea;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * After a tree search hit, focus the matching text in the element editor (e.g. Body Data).
+ * After a tree search hit, focus matching text in the element editor (e.g. Body Data)
+ * and walk / replace individual occurrences.
  */
 final class SearchGuiHighlighter {
 
     private static final Logger log = LoggerFactory.getLogger(SearchGuiHighlighter.class);
 
-    private SearchGuiHighlighter() {
+    private final List<LocatedMatch> matches = new ArrayList<>();
+    private int index = -1;
+    private String searchText;
+    private boolean caseSensitive;
+    private boolean regexp;
+
+    void reset() {
+        matches.clear();
+        index = -1;
+        searchText = null;
     }
 
-    static void focusMatchInCurrentGui(String searchText, boolean caseSensitive, boolean regexp) {
+    int getMatchCount() {
+        return matches.size();
+    }
+
+    /**
+     * @return 0-based index of the focused match, or -1
+     */
+    int getCurrentIndex() {
+        return index;
+    }
+
+    /**
+     * Collect matches in the current GUI and show the first or last one.
+     *
+     * @return true if any match is visible in the editor
+     */
+    boolean enterCurrentGui(String text, boolean caseSensitiveSearch, boolean regexpSearch, boolean showFirst) {
+        this.searchText = text;
+        this.caseSensitive = caseSensitiveSearch;
+        this.regexp = regexpSearch;
+        collectFromCurrentGui();
+        if (matches.isEmpty()) {
+            index = -1;
+            return false;
+        }
+        index = showFirst ? 0 : matches.size() - 1;
+        applyCurrent();
+        return true;
+    }
+
+    /**
+     * Move to the next/previous match in the current GUI.
+     *
+     * @return false when there is no further match in that direction
+     */
+    boolean navigate(boolean next) {
+        if (matches.isEmpty()) {
+            return false;
+        }
+        if (next) {
+            if (index < matches.size() - 1) {
+                index++;
+                applyCurrent();
+                return true;
+            }
+            return false;
+        }
+        if (index > 0) {
+            index--;
+            applyCurrent();
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Replace the currently focused match in the editor.
+     *
+     * @return 1 if a replacement happened, otherwise 0
+     */
+    int replaceCurrent(String replaceWith) {
+        if (index < 0 || index >= matches.size() || replaceWith == null || StringUtils.isEmpty(searchText)) {
+            return 0;
+        }
+        LocatedMatch match = matches.get(index);
+        JTextComponent editor = match.editor;
+        String text = editor.getText();
+        if (match.end > text.length() || match.start < 0) {
+            collectFromCurrentGui();
+            return 0;
+        }
+        editor.setCaretPosition(match.start);
+        editor.moveCaretPosition(match.end);
+        editor.replaceSelection(replaceWith);
+        int caret = match.start + replaceWith.length();
+        collectFromCurrentGui();
+        index = -1;
+        for (int i = 0; i < matches.size(); i++) {
+            LocatedMatch next = matches.get(i);
+            if (next.editor == editor && next.start >= caret) {
+                index = i;
+                break;
+            }
+        }
+        if (index >= 0) {
+            applyCurrent();
+        }
+        return 1;
+    }
+
+    private void collectFromCurrentGui() {
+        matches.clear();
         if (StringUtils.isEmpty(searchText)) {
             return;
         }
         GuiPackage guiPackage = GuiPackage.getInstance();
-        guiPackage.updateCurrentGui();
-        JMeterGUIComponent gui = guiPackage.getCurrentGui();
+        if (guiPackage == null || guiPackage.getCurrentNode() == null) {
+            return;
+        }
+        JMeterGUIComponent gui = guiPackage.getGui(guiPackage.getCurrentElement());
         if (!(gui instanceof Component)) {
             return;
         }
-        Component root = (Component) gui;
         List<JTextComponent> editors = new ArrayList<>();
-        collectTextComponents(root, editors);
-        JTextComponent best = null;
-        int bestStart = -1;
-        int bestEnd = -1;
-        int bestScore = Integer.MIN_VALUE;
+        collectTextComponents((Component) gui, editors);
         for (JTextComponent editor : editors) {
-            if (!editor.isEnabled()) {
+            if (!editor.isEnabled() || editor instanceof JPasswordField) {
                 continue;
             }
-            Match match = findMatch(editor.getText(), searchText, caseSensitive, regexp);
-            if (match == null) {
-                continue;
-            }
-            int score = editor instanceof JTextArea ? 1_000 : 0;
-            score += Math.min(editor.getText().length(), 500);
-            if (score > bestScore) {
-                bestScore = score;
-                best = editor;
-                bestStart = match.start;
-                bestEnd = match.end;
+            List<SearchTextMatches.Span> spans =
+                    SearchTextMatches.findAll(editor.getText(), searchText, caseSensitive, regexp);
+            for (SearchTextMatches.Span span : spans) {
+                matches.add(new LocatedMatch(editor, span.getStart(), span.getEnd(), rank(editor)));
             }
         }
-        if (best == null) {
+        matches.sort(Comparator
+                .comparingInt((LocatedMatch m) -> m.rank).reversed()
+                .thenComparingInt(m -> m.start));
+    }
+
+    private void applyCurrent() {
+        if (index < 0 || index >= matches.size()) {
             return;
         }
-        final JTextComponent target = best;
-        final int start = bestStart;
-        final int end = bestEnd;
-        SwingUtilities.invokeLater(() -> {
-            activateTabForComponent(target);
-            target.requestFocusInWindow();
-            try {
-                target.select(start, end);
-                if (target instanceof JTextArea) {
-                    ((JTextArea) target).setCaretPosition(start);
-                }
-            } catch (IllegalArgumentException ex) {
-                log.debug("Unable to select search match in editor", ex);
+        LocatedMatch match = matches.get(index);
+        SwingUtilities.invokeLater(() -> selectMatch(match));
+    }
+
+    private static void selectMatch(LocatedMatch match) {
+        JTextComponent target = match.editor;
+        activateTabForComponent(target);
+        target.requestFocusInWindow();
+        try {
+            target.getCaret().setSelectionVisible(true);
+            target.setCaretPosition(match.start);
+            target.moveCaretPosition(match.end);
+            @SuppressWarnings("deprecation")
+            Rectangle view = target.modelToView(match.start);
+            if (view != null) {
+                target.scrollRectToVisible(view);
             }
-        });
+        } catch (BadLocationException | IllegalArgumentException ex) {
+            log.debug("Unable to select search match in editor", ex);
+        }
+    }
+
+    private static int rank(JTextComponent editor) {
+        if (editor instanceof JSyntaxTextArea) {
+            return 3;
+        }
+        if (editor instanceof JTextArea) {
+            return 2;
+        }
+        return 1;
     }
 
     private static void collectTextComponents(Component component, List<JTextComponent> editors) {
@@ -129,34 +244,17 @@ final class SearchGuiHighlighter {
         }
     }
 
-    private static Match findMatch(String haystack, String needle, boolean caseSensitive, boolean regexp) {
-        if (StringUtils.isEmpty(haystack)) {
-            return null;
-        }
-        if (regexp) {
-            int flags = caseSensitive ? 0 : Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE;
-            Matcher matcher = Pattern.compile(needle, flags).matcher(haystack);
-            if (matcher.find()) {
-                return new Match(matcher.start(), matcher.end());
-            }
-            return null;
-        }
-        int index = caseSensitive
-                ? haystack.indexOf(needle)
-                : StringUtils.indexOfIgnoreCase(haystack, needle);
-        if (index < 0) {
-            return null;
-        }
-        return new Match(index, index + needle.length());
-    }
-
-    private static final class Match {
+    private static final class LocatedMatch {
+        private final JTextComponent editor;
         private final int start;
         private final int end;
+        private final int rank;
 
-        private Match(int start, int end) {
+        private LocatedMatch(JTextComponent editor, int start, int end, int rank) {
+            this.editor = editor;
             this.start = start;
             this.end = end;
+            this.rank = rank;
         }
     }
 }
