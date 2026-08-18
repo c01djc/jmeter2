@@ -44,4 +44,4 @@ Gradle 命令见 [gradle.md](gradle.md)。
 
 ## 文档
 
-上游用户手册仍在 [xdocs](xdocs)。本 fork 的说明以根目录 [README.md](README.md) 和 [jmeter2/CHANGELOG.md](jmeter2/CHANGELOG.md) 为准。
+上游用户手册仍在 [xdocs](xdocs)。本 fork 的说明以根目录 [README.md](README.md) 和 [CHANGELOG.md](CHANGELOG.md) 为准。

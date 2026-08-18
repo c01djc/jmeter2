@@ -90,8 +90,7 @@ hs_err_pid*
 # Local JDK / Gradle (do not publish)
 /.tools/
 
-# Built distributions and old unpack trees (publish zip via GitHub Releases)
-/jmeter2/release/
-/jmeter2/ui3/
-/jmeter2/tmp-compose/
+# Local unpack / preview trees. The runnable zip is published as a GitHub Release,
+# not as source. See https://github.com/c01djc/jmeter2/releases
+/jmeter2/
 /src/dist/build/

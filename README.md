@@ -15,7 +15,7 @@ JMeter2 是基于 Apache JMeter 5.6.3 的独立开源 fork，**不是** Apache �
 
 ## 相对上游改了什么
 
-详见 [jmeter2/CHANGELOG.md](jmeter2/CHANGELOG.md)。摘要：
+详见 [CHANGELOG.md](CHANGELOG.md)。摘要：
 
 - 中文界面（默认 `zh_CN`）、HTML 报告中英切换
 - 异步写 `.jtl`、大报告生成更稳
@@ -24,9 +24,11 @@ JMeter2 是基于 Apache JMeter 5.6.3 的独立开源 fork，**不是** Apache �
 
 ## 运行
 
+本仓库是 **源码**。可运行的工具包在 [Releases](https://github.com/c01djc/jmeter2/releases)，不要在源码目录里找安装包。
+
 需要 **Java 8+**（录制 HTTPS 建议用带 `keytool` 的 JDK）。
 
-1. 下载 Release 里的 `jmeter2-1.0.0.zip` 并解压  
+1. 打开 [Releases](https://github.com/c01djc/jmeter2/releases)，下载 `jmeter2-1.0.0.zip` 并解压  
 2. 进入 `jmeter2-1.0.0/bin`  
 3. Windows 运行 `jmeter2.bat`，Linux / macOS 运行 `./jmeter2.sh`
 
