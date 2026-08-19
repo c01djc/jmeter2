@@ -6,7 +6,7 @@
 
 请在 **本仓库** 开 Issue，并尽量带上：
 
-- JMeter2 版本（例如 1.0.0）和 Java 版本
+- JMeter2 版本（例如 1.0.1）和 Java 版本
 - 测试计划（`.jmx`）和 `jmeter.log`
 - 复现步骤
 

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 1.0.1
+
+Based on Apache JMeter 5.6.3.
+
 ### Packaging
 - 发行包默认附带 jp@gc：Custom Thread Groups、Graphs Basic、Plugins Manager
 
