@@ -84,6 +84,7 @@ import org.apache.jmeter.gui.action.ActionRouter;
 import org.apache.jmeter.gui.action.KeyStrokes;
 import org.apache.jmeter.gui.action.LoadDraggedFile;
 import org.apache.jmeter.gui.action.LookAndFeelCommand;
+import org.apache.jmeter.gui.action.ZoomInOut;
 import org.apache.jmeter.gui.logging.GuiLogEventListener;
 import org.apache.jmeter.gui.logging.LogEventObject;
 import org.apache.jmeter.gui.tree.JMeterCellRenderer;
@@ -247,14 +248,15 @@ public class MainFrame extends JFrame implements TestStateListener, Remoteable, 
             // Shift down means "horizontal scrolling" on macOS, and we need only vertical one
             if ((e.getModifiersEx() & (ctrlAltMask | InputEvent.SHIFT_DOWN_MASK)) == ctrlAltMask) {
                 e.consume();
-                final float scale = 1.1f;
                 int rotation = e.getWheelRotation();
+                float scale = org.apache.jorphan.gui.JMeterUIDefaults.INSTANCE.getScale();
+                final float step = 1.1f;
                 if (rotation > 0) { // DOWN
-                    JMeterUtils.applyScaleOnFonts(1.0f / scale);
+                    scale /= step;
                 } else if (rotation < 0) { // UP
-                    JMeterUtils.applyScaleOnFonts(scale);
+                    scale *= step;
                 }
-                JMeterUtils.refreshUI();
+                ZoomInOut.applyScale(scale);
             }
         });
         addPropertyChangeListener("graphicsConfiguration", evt -> {
@@ -617,6 +619,14 @@ public class MainFrame extends JFrame implements TestStateListener, Remoteable, 
         javax.swing.JComponent glue = (javax.swing.JComponent) Box.createGlue();
         JMeterToolBar.markStatusWidgetsStart(glue);
         toolPanel.add(glue);
+
+        toolPanel.add(JMeterToolBar.createToolbarActionButton(
+                "menu_zoom_in", "ZOOM_IN",
+                "org/apache/jmeter/images/toolbar/icons-custom/zoom-in.svg"));
+        toolPanel.add(JMeterToolBar.createToolbarActionButton(
+                "menu_zoom_out", "ZOOM_OUT",
+                "org/apache/jmeter/images/toolbar/icons-custom/zoom-out.svg"));
+        toolPanel.add(Box.createRigidArea(new Dimension(5, 15)));
 
         toolPanel.add(testTimeDuration);
         toolPanel.add(Box.createRigidArea(new Dimension(5, 15)));

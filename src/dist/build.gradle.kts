@@ -106,13 +106,11 @@ dependencies {
     buildDocs("org.apache.commons:commons-collections4")
     buildDocs("org.jdom:jdom")
 
-    // jp@gc plugins shipped in the runnable zip (lib/ext). Non-transitive:
-    // manager/graphs otherwise pull extra log4j/slf4j copies into ext.
+    // jp@gc plugins shipped in the runnable zip (lib/ext). Non-transitive.
+    // Keep only Custom Thread Groups (+ shared cmn) — Plugins Manager / graphs
+    // scan jars at startup and make the GUI feel much slower to open.
     bundledJmeterPlugins("kg.apc:jmeter-plugins-casutg:2.10")
     bundledJmeterPlugins("kg.apc:jmeter-plugins-cmn-jmeter:0.6")
-    bundledJmeterPlugins("kg.apc:jmeter-plugins-manager:1.10")
-    bundledJmeterPlugins("kg.apc:jmeter-plugins-graphs-basic:2.0")
-    bundledJmeterPlugins("kg.apc:jmeter-plugins-charts:0.1")
 }
 
 tasks.clean {

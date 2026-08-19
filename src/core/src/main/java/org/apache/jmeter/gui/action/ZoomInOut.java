@@ -21,7 +21,10 @@ import java.awt.event.ActionEvent;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.jmeter.gui.GuiPackage;
+import org.apache.jmeter.gui.UiZoomPreferences;
 import org.apache.jmeter.util.JMeterUtils;
+import org.apache.jorphan.gui.JFactory;
 import org.apache.jorphan.gui.JMeterUIDefaults;
 
 import com.google.auto.service.AutoService;
@@ -52,17 +55,25 @@ public class ZoomInOut extends AbstractAction {
             scale *= ZOOM_SCALE;
         } else if (actionCommand.equals(ActionNames.ZOOM_OUT)) {
             scale /= ZOOM_SCALE;
+        } else {
+            return;
         }
-        // Clamp to keep UI usable
-        scale = Math.max(0.5f, Math.min(scale, 3.0f));
+        applyScale(scale);
+    }
+
+    /**
+     * Apply UI zoom and persist for the next session.
+     */
+    public static void applyScale(float scale) {
+        scale = UiZoomPreferences.clamp(scale);
         JMeterUIDefaults.INSTANCE.setScale(scale);
+        UiZoomPreferences.saveScale(scale);
         JMeterUtils.refreshUI();
-        // Ensure the currently visible editor (request/response panes) re-applies scaled fonts
-        org.apache.jmeter.gui.GuiPackage guiPackage = org.apache.jmeter.gui.GuiPackage.getInstance();
+        GuiPackage guiPackage = GuiPackage.getInstance();
         if (guiPackage != null && guiPackage.getMainFrame() != null) {
             javax.swing.JComponent main = (javax.swing.JComponent) guiPackage.getMainFrame()
                     .getContentPane();
-            org.apache.jorphan.gui.JFactory.updateUi(main);
+            JFactory.updateUi(main);
             main.revalidate();
             main.repaint();
         }

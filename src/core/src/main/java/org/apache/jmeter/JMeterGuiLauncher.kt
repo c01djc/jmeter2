@@ -26,6 +26,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
 import org.apache.jmeter.gui.GuiPackage
 import org.apache.jmeter.gui.MainFrame
+import org.apache.jmeter.gui.UiZoomPreferences
 import org.apache.jmeter.gui.action.ActionNames
 import org.apache.jmeter.gui.action.ActionRouter
 import org.apache.jmeter.gui.action.Load
@@ -94,6 +95,7 @@ public object JMeterGuiLauncher {
         }
         setProgress(1)
         JMeterUtils.applyHiDPIOnFonts()
+        UiZoomPreferences.restoreSavedScale()
         log.debug("Setup tree")
         setProgress(5)
         val treeModel = JMeterTreeModel()

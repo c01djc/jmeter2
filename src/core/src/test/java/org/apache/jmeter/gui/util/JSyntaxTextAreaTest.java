@@ -38,6 +38,14 @@ import org.junit.jupiter.api.parallel.Isolated;
 public class JSyntaxTextAreaTest extends JMeterTestCase {
 
     @Test
+    public void heavyBodyUsesLongLineOrTotalSize() {
+        assertEquals(false, JSyntaxTextArea.isHeavyBody(100, 1));
+        assertEquals(true, JSyntaxTextArea.isHeavyBody(2048, 1));
+        assertEquals(true, JSyntaxTextArea.isHeavyBody(8192, 40));
+        assertEquals(false, JSyntaxTextArea.isHeavyBody(3000, 10));
+    }
+
+    @Test
     public void testSetLanguage() {
         try {
             @SuppressWarnings("deprecation") // test code

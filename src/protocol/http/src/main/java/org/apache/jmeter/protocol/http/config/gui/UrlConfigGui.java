@@ -108,6 +108,8 @@ public class UrlConfigGui extends JPanel implements ChangeListener {
     // Body data
     private JSyntaxTextArea postBodyContent;
 
+    private JSyntaxSearchToolBar postBodySearchBar;
+
     // Tabbed pane that contains parameters and raw body
     private AbstractValidationTabbedPane postContentTabbedPane;
 
@@ -288,7 +290,11 @@ public class UrlConfigGui extends JPanel implements ChangeListener {
             boolean useRaw = el.get(httpSchema.getPostBodyRaw());
             if(useRaw) {
                 String postBody = computePostBody(arguments, true); // Convert CRLF to CR, see modifyTestElement
-                postBodyContent.setInitialText(postBody);
+                if (postBodySearchBar != null) {
+                    postBodySearchBar.loadBodyContent(postBody);
+                } else {
+                    postBodyContent.setInitialText(postBody);
+                }
                 postBodyContent.setCaretPosition(0);
                 argsPanel.clear();
                 postContentTabbedPane.setSelectedIndex(tabRawBodyIndex, false);
@@ -429,8 +435,9 @@ public class UrlConfigGui extends JPanel implements ChangeListener {
         if(showRawBodyPane) {
             tabRawBodyIndex = ++indx;
             postBodyContent = JSyntaxTextArea.getInstance(30, 50);// $NON-NLS-1$
-            postContentTabbedPane.add(JMeterUtils.getResString("post_body"),
-                    JSyntaxSearchToolBar.wrapWithFindReplace(postBodyContent));// $NON-NLS-1$
+            JPanel bodyPanel = JSyntaxSearchToolBar.wrapWithFindReplace(postBodyContent);
+            postBodySearchBar = JSyntaxSearchToolBar.getSearchToolBar(bodyPanel);
+            postContentTabbedPane.add(JMeterUtils.getResString("post_body"), bodyPanel);// $NON-NLS-1$
         }
 
         if(showFileUploadPane) {

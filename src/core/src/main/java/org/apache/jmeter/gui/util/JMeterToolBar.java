@@ -92,6 +92,26 @@ public class JMeterToolBar extends JToolBar implements LocaleChangeListener {
         return toolBar;
     }
 
+    /**
+     * Toolbar action button (e.g. zoom controls appended on the right by {@code MainFrame}).
+     */
+    public static JButton createToolbarActionButton(String i18nKey, String actionNameField,
+            String iconResourcePath) {
+        String iconSize = JMeterUtils.getPropDefault(TOOLBAR_ICON_SIZE, DEFAULT_TOOLBAR_ICON_SIZE);
+        String definition = i18nKey + "," + actionNameField + "," + iconResourcePath;
+        try {
+            return makeButtonItemRes(new IconToolbarBean(definition, iconSize));
+        } catch (Exception e) {
+            if (log.isWarnEnabled()) {
+                log.warn("Exception while creating toolbar button {}: {}", actionNameField, e.getMessage());
+            }
+            JButton fallback = new JButton(JMeterUtils.getResString(i18nKey));
+            fallback.setActionCommand(actionNameField);
+            fallback.addActionListener(ActionRouter.getInstance());
+            return fallback;
+        }
+    }
+
     @Override
     protected void addImpl(Component comp, Object constraints, int index) {
         super.addImpl(comp, constraints, index);

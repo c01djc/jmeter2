@@ -28,6 +28,8 @@ import java.util.Properties;
 
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 
 import org.apache.jmeter.gui.action.LookAndFeelCommand;
 import org.apache.jmeter.util.JMeterUtils;
@@ -58,6 +60,7 @@ public class JSyntaxTextArea extends RSyntaxTextArea {
     private final Properties languageProperties = JMeterUtils.loadProperties("org/apache/jmeter/gui/util/textarea.properties"); //$NON-NLS-1$
 
     private final boolean disableUndo;
+    private transient boolean heavyBodyApplied;
     private static final boolean WRAP_STYLE_WORD = JMeterUtils.getPropDefault("jsyntaxtextarea.wrapstyleword", true);
     private static final boolean LINE_WRAP = JMeterUtils.getPropDefault("jsyntaxtextarea.linewrap", true);
     private static final boolean CODE_FOLDING = JMeterUtils.getPropDefault("jsyntaxtextarea.codefolding", true);
@@ -66,6 +69,16 @@ public class JSyntaxTextArea extends RSyntaxTextArea {
     private static final int USER_FONT_SIZE = JMeterUtils.getPropDefault("jsyntaxtextarea.font.size", -1);
     /** Unscaled base size when jsyntaxtextarea.font.size is not set (matches typical RSyntax themes). */
     private static final float DEFAULT_BASE_FONT_SIZE = 12f;
+
+    /**
+     * Wrapping / highlighting a minified JSON body above this size freezes the EDT.
+     */
+    static final int HEAVY_BODY_CHARS = 8_192;
+
+    /**
+     * A single wrapped line longer than this is enough to make RSyntaxTextArea lag.
+     */
+    static final int LONG_LINE_CHARS = 2_048;
 
     private static final HierarchyListener GUTTER_THEME_PATCHER = e -> {
         if ((e.getChangeFlags() & HierarchyEvent.PARENT_CHANGED) != 0
@@ -311,18 +324,111 @@ public class JSyntaxTextArea extends RSyntaxTextArea {
     }
 
     /**
+     * HTTP Body Data editor: do not treat JSON as Java, and drop wrapping /
+     * bracket matching that stall the UI on large one-line payloads.
+     */
+    public void configureAsHttpBodyEditor() {
+        setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
+        setCodeFoldingEnabled(false);
+        setBracketMatchingEnabled(false);
+        setAnimateBracketMatching(false);
+        setHyperlinksEnabled(false);
+        setMarkOccurrences(false);
+        setAutoIndentEnabled(false);
+        setCloseCurlyBraces(false);
+        setPaintTabLines(false);
+        setClearWhitespaceLinesEnabled(false);
+        // Selection / drag on large bodies: cheaper painting
+        setAntiAliasingEnabled(false);
+        setRoundedSelectionEdges(false);
+        setHighlightCurrentLine(false);
+        setFadeCurrentLineHighlight(false);
+        setPaintMatchedBracketPair(false);
+        applyHeavyBodyPolicy();
+        getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                scheduleHeavyBodyPolicy();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                scheduleHeavyBodyPolicy();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                // attribute change only
+            }
+        });
+    }
+
+    static boolean isHeavyBody(int length, int lineCount) {
+        return length >= HEAVY_BODY_CHARS || (lineCount <= 1 && length >= LONG_LINE_CHARS);
+    }
+
+    private void scheduleHeavyBodyPolicy() {
+        SwingUtilities.invokeLater(this::applyHeavyBodyPolicy);
+    }
+
+    private void applyHeavyBodyPolicy() {
+        if (heavyBodyApplied) {
+            return;
+        }
+        if (isHeavyBody(getDocument().getLength(), getLineCount())) {
+            heavyBodyApplied = true;
+            setLineWrap(false);
+            setWrapStyleWord(false);
+            setHighlightCurrentLine(false);
+            setFadeCurrentLineHighlight(false);
+            setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
+            setCodeFoldingEnabled(false);
+            setBracketMatchingEnabled(false);
+            setMarkOccurrences(false);
+            setAntiAliasingEnabled(false);
+            setRoundedSelectionEdges(false);
+            setPaintMatchedBracketPair(false);
+        }
+    }
+
+    /**
      * Sets initial text resetting undo history
      *
      * @param string
      *            The initial text to be set
      */
     public void setInitialText(String string) {
+        heavyBodyApplied = false;
         try {
             setText(Objects.toString(string, ""));
         } catch (Exception e) {
             log.error("Dubious problem while setting text to {}", string, e);
         }
         discardAllEdits();
+        applyHeavyBodyPolicy();
+    }
+
+    /**
+     * Light syntax highlighting for small, formatted JSON/XML bodies only.
+     */
+    public void refreshBodyEditorPresentation() {
+        applyHeavyBodyPolicy();
+        if (heavyBodyApplied) {
+            setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
+            return;
+        }
+        String trimmed = getText().trim();
+        if (trimmed.isEmpty()) {
+            setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
+            return;
+        }
+        if (BodyDataFormatter.looksLikeJson(trimmed)) {
+            setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON);
+        } else if (BodyDataFormatter.looksLikeXml(trimmed)) {
+            setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_XML);
+        } else {
+            setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
+        }
     }
 
     private static Theme loadTheme(Class<?> klass, String name) {

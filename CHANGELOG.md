@@ -2,12 +2,26 @@
 
 ## Unreleased
 
+## 1.0.2
+
+Based on Apache JMeter 5.6.3.
+
+### Usability
+- 放大 / 缩小移至主工具栏右侧（放大镜图标），设置会记住，下次打开仍生效
+- 消息体较大（尤其是超长单行 JSON）时关闭自动换行、语法高亮和“全部标记”，避免编辑和查找卡死
+- 消息体 JSON / XML：切换节点时先显示原文，小体积紧凑内容在后台自动格式化；大内容请用查找栏「格式化」
+- 小体积已格式化的 JSON/XML 启用轻量语法高亮；查找框输入防抖，大文本不自动全量扫描
+- 消息体编辑降低抗锯齿等绘制开销，减轻拖选卡顿
+
+### Packaging
+- 默认发行包只附带 jp@gc Custom Thread Groups（不再默认带 Plugins Manager / 基础图表，加快启动）
+
 ## 1.0.1
 
 Based on Apache JMeter 5.6.3.
 
 ### Packaging
-- 发行包默认附带 jp@gc：Custom Thread Groups、Graphs Basic、Plugins Manager
+- 发行包默认附带 jp@gc：Custom Thread Groups（Stepping / Ultimate 等）
 
 ### Usability
 - HTTP 请求 **消息体数据** 可查找、定位、替换（Ctrl+F、F3 / Shift+F3）；不必依赖结构树搜索

@@ -28,6 +28,10 @@ import java.text.MessageFormat;
 import java.util.List;
 
 import javax.swing.AbstractAction;
+import javax.swing.SwingWorker;
+import javax.swing.Timer;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.ActionMap;
 import javax.swing.BorderFactory;
 import javax.swing.InputMap;
@@ -62,6 +66,7 @@ public final class JSyntaxSearchToolBar implements ActionListener {
     public static final String FIND_PREVIOUS_ACTION = "FindPrevious";
     public static final String REPLACE_ACTION = "Replace";
     public static final String REPLACE_ALL_ACTION = "ReplaceAll";
+    public static final String FORMAT_ACTION = "FormatBody";
 
     private static final Color DIVIDER = new Color(0xD0, 0xD0, 0xD0);
 
@@ -78,6 +83,12 @@ public final class JSyntaxSearchToolBar implements ActionListener {
     private JCheckBox regexCB;
 
     private JCheckBox matchCaseCB;
+
+    private JButton formatButton;
+
+    private Timer searchDebounceTimer;
+
+    private SwingWorker<?, ?> pendingFormatWorker;
 
     /**
      * The component where we Search
@@ -113,11 +124,29 @@ public final class JSyntaxSearchToolBar implements ActionListener {
      * @return panel containing the toolbar and scrollable text area
      */
     public static JPanel wrapWithFindReplace(JSyntaxTextArea textArea) {
+        textArea.configureAsHttpBodyEditor();
         JSyntaxSearchToolBar bar = new JSyntaxSearchToolBar(textArea, true);
         JPanel panel = new JPanel(new BorderLayout());
+        panel.putClientProperty(HttpBodyEditorLoader.TOOLBAR_CLIENT_KEY, bar);
         panel.add(bar.getBarComponent(), BorderLayout.NORTH);
         panel.add(JTextScrollPane.getInstance(textArea), BorderLayout.CENTER);
         return panel;
+    }
+
+    /**
+     * @param wrappedPanel panel returned by {@link #wrapWithFindReplace}
+     * @return search toolbar for that body editor, or null
+     */
+    public static JSyntaxSearchToolBar getSearchToolBar(JComponent wrappedPanel) {
+        Object value = wrappedPanel.getClientProperty(HttpBodyEditorLoader.TOOLBAR_CLIENT_KEY);
+        return value instanceof JSyntaxSearchToolBar ? (JSyntaxSearchToolBar) value : null;
+    }
+
+    /**
+     * Show raw body immediately; compact JSON/XML is pretty-printed in the background.
+     */
+    public void loadBodyContent(String raw) {
+        HttpBodyEditorLoader.loadContent(this, raw);
     }
 
     private void init() {
@@ -148,7 +177,7 @@ public final class JSyntaxSearchToolBar implements ActionListener {
 
         JPanel panel = new JPanel(new MigLayout(
                 "insets 8 10 8 10, fillx, gapx 8, gapy 6",
-                "[][grow,fill][][][][][right]"));
+                "[][grow,fill][][][][][][right]"));
         panel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(0, 0, 1, 0, DIVIDER),
                 BorderFactory.createEmptyBorder()));
@@ -159,6 +188,8 @@ public final class JSyntaxSearchToolBar implements ActionListener {
         panel.add(createButton("search_previous", FIND_PREVIOUS_ACTION, false));
         panel.add(matchCaseCB);
         panel.add(regexCB);
+        formatButton = createButton("search_format_body", FORMAT_ACTION, false);
+        panel.add(formatButton);
         panel.add(statusLabel, "wrap");
 
         panel.add(new JLabel(JMeterUtils.getResString("search_text_replace")));
@@ -169,6 +200,85 @@ public final class JSyntaxSearchToolBar implements ActionListener {
         this.toolBar = new JToolBar();
         toolBar.setFloatable(false);
         this.barComponent = panel;
+        installSearchDebouncing();
+    }
+
+    private void installSearchDebouncing() {
+        searchDebounceTimer = new Timer(350, e -> {
+            if (!searchField.getText().isEmpty()
+                    && dataField.getDocument().getLength() < JSyntaxTextArea.HEAVY_BODY_CHARS) {
+                find(true);
+            }
+        });
+        searchDebounceTimer.setRepeats(false);
+        searchField.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                searchDebounceTimer.restart();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                searchDebounceTimer.restart();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                // attribute change only
+            }
+        });
+        regexCB.addActionListener(e -> searchDebounceTimer.restart());
+        matchCaseCB.addActionListener(e -> searchDebounceTimer.restart());
+    }
+
+    JSyntaxTextArea getEditor() {
+        return dataField;
+    }
+
+    void cancelPendingFormat() {
+        if (pendingFormatWorker != null && !pendingFormatWorker.isDone()) {
+            pendingFormatWorker.cancel(true);
+        }
+        pendingFormatWorker = null;
+        if (formatButton != null) {
+            formatButton.setEnabled(true);
+        }
+    }
+
+    void setPendingFormatWorker(SwingWorker<?, ?> worker) {
+        cancelPendingFormat();
+        pendingFormatWorker = worker;
+        if (formatButton != null) {
+            formatButton.setEnabled(false);
+        }
+    }
+
+    void clearPendingFormatWorker(SwingWorker<?, ?> worker) {
+        if (pendingFormatWorker == worker) {
+            pendingFormatWorker = null;
+            if (formatButton != null) {
+                formatButton.setEnabled(true);
+            }
+        }
+    }
+
+    void showStatusMessage(String messageKey, boolean resourceKey) {
+        if (statusLabel == null) {
+            return;
+        }
+        statusLabel.setText(resourceKey ? JMeterUtils.getResString(messageKey) : messageKey);
+    }
+
+    void refreshBodyHints(String raw) {
+        if (statusLabel == null) {
+            return;
+        }
+        if (raw != null && (raw.length() >= JSyntaxTextArea.HEAVY_BODY_CHARS
+                || raw.length() > BodyDataFormatter.AUTO_FORMAT_MAX_CHARS)) {
+            showStatusMessage("search_body_hint_large", true);
+        } else {
+            statusLabel.setText(" ");
+        }
     }
 
     private JComponent getBarComponent() {
@@ -240,7 +350,13 @@ public final class JSyntaxSearchToolBar implements ActionListener {
             replace(false);
         } else if (REPLACE_ALL_ACTION.equals(command)) {
             replace(true);
+        } else if (FORMAT_ACTION.equals(command)) {
+            formatBody();
         }
+    }
+
+    private void formatBody() {
+        HttpBodyEditorLoader.formatManually(this);
     }
 
     private void find(boolean forward) {
@@ -263,7 +379,13 @@ public final class JSyntaxSearchToolBar implements ActionListener {
             }
         }
         toggleSearchField(searchField, found);
-        updateOccurrenceStatus();
+        if (enableReplace) {
+            if (dataField.getDocument().getLength() < JSyntaxTextArea.HEAVY_BODY_CHARS) {
+                updateOccurrenceStatus();
+            } else {
+                updateStatus(0, 0);
+            }
+        }
         if (found) {
             dataField.requestFocusInWindow();
         }
@@ -290,7 +412,11 @@ public final class JSyntaxSearchToolBar implements ActionListener {
         if (guiPackage != null) {
             guiPackage.markCurrentGuiDirty();
         }
-        updateOccurrenceStatus();
+        if (dataField.getDocument().getLength() < JSyntaxTextArea.HEAVY_BODY_CHARS) {
+            updateOccurrenceStatus();
+        } else {
+            updateStatus(0, 0);
+        }
         dataField.requestFocusInWindow();
     }
 
@@ -344,14 +470,15 @@ public final class JSyntaxSearchToolBar implements ActionListener {
         }
     }
 
-    private static SearchContext createSearchContext(String text, boolean forward, boolean matchCase,
+    private SearchContext createSearchContext(String text, boolean forward, boolean matchCase,
             boolean isRegex) {
         SearchContext context = new SearchContext();
         context.setSearchFor(text);
         context.setMatchCase(matchCase);
         context.setRegularExpression(isRegex);
         context.setSearchForward(forward);
-        context.setMarkAll(true);
+        // Mark-all paints every hit; a short needle in a huge JSON body freezes the EDT.
+        context.setMarkAll(!enableReplace && dataField.getDocument().getLength() < JSyntaxTextArea.HEAVY_BODY_CHARS);
         context.setSearchSelectionOnly(false);
         context.setWholeWord(false);
         return context;
