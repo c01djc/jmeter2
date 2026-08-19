@@ -85,7 +85,7 @@ val srcLicense by configurations.creating {
 // and expected_release_jars.csv stays about JMeter's own deps.
 val bundledJmeterPlugins by configurations.creating {
     isCanBeConsumed = false
-    isTransitive = true
+    isTransitive = false
 }
 
 // Note: you can inspect final classpath (list of jars in the binary distribution)  via
@@ -106,17 +106,13 @@ dependencies {
     buildDocs("org.apache.commons:commons-collections4")
     buildDocs("org.jdom:jdom")
 
-    // jp@gc plugins shipped in the runnable zip (lib/ext)
-    bundledJmeterPlugins("kg.apc:jmeter-plugins-casutg:2.10") {
-        exclude(group = "org.apache.jmeter")
-        exclude(module = "jmeter-plugins-emulators")
-    }
-    bundledJmeterPlugins("kg.apc:jmeter-plugins-manager:1.10") {
-        exclude(group = "org.apache.jmeter")
-    }
-    bundledJmeterPlugins("kg.apc:jmeter-plugins-graphs-basic:2.0") {
-        exclude(group = "org.apache.jmeter")
-    }
+    // jp@gc plugins shipped in the runnable zip (lib/ext). Non-transitive:
+    // manager/graphs otherwise pull extra log4j/slf4j copies into ext.
+    bundledJmeterPlugins("kg.apc:jmeter-plugins-casutg:2.10")
+    bundledJmeterPlugins("kg.apc:jmeter-plugins-cmn-jmeter:0.6")
+    bundledJmeterPlugins("kg.apc:jmeter-plugins-manager:1.10")
+    bundledJmeterPlugins("kg.apc:jmeter-plugins-graphs-basic:2.0")
+    bundledJmeterPlugins("kg.apc:jmeter-plugins-charts:0.1")
 }
 
 tasks.clean {
