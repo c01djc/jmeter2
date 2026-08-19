@@ -22,6 +22,7 @@ JMeter2 是基于 Apache JMeter 5.6.3 的独立开源 fork，**不是** Apache �
 - 异步写 `.jtl`、大报告生成更稳
 - 可选 HttpClient5 采样器
 - 发行包名 `jmeter2-<version>`，入口只有 `jmeter2.bat` / `jmeter2.sh`
+- 发行包默认带 jp@gc 插件：Custom Thread Groups（Stepping 等）、基础图表、插件管理器
 
 ## 消息体查找 / 替换
 

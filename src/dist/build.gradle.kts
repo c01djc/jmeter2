@@ -80,6 +80,14 @@ val srcLicense by configurations.creating {
     isCanBeConsumed = false
 }
 
+// Third-party JMeter Plugins (jp@gc). Must land in lib/ext, not lib/.
+// Keep off runtimeClasspath so Apache JMeter artifacts are not pulled in,
+// and expected_release_jars.csv stays about JMeter's own deps.
+val bundledJmeterPlugins by configurations.creating {
+    isCanBeConsumed = false
+    isTransitive = true
+}
+
 // Note: you can inspect final classpath (list of jars in the binary distribution)  via
 // gw dependencies --configuration runtimeClasspath
 dependencies {
@@ -97,6 +105,18 @@ dependencies {
     buildDocs("commons-lang:commons-lang")
     buildDocs("org.apache.commons:commons-collections4")
     buildDocs("org.jdom:jdom")
+
+    // jp@gc plugins shipped in the runnable zip (lib/ext)
+    bundledJmeterPlugins("kg.apc:jmeter-plugins-casutg:2.10") {
+        exclude(group = "org.apache.jmeter")
+        exclude(module = "jmeter-plugins-emulators")
+    }
+    bundledJmeterPlugins("kg.apc:jmeter-plugins-manager:1.10") {
+        exclude(group = "org.apache.jmeter")
+    }
+    bundledJmeterPlugins("kg.apc:jmeter-plugins-graphs-basic:2.0") {
+        exclude(group = "org.apache.jmeter")
+    }
 }
 
 tasks.clean {
@@ -261,6 +281,7 @@ libsExt.from(populateLibs)
 binLibs.from(populateLibs)
 
 val copyLibs by tasks.registering(Sync::class) {
+    dependsOn(bundledJmeterPlugins)
     // Can't use $rootDir since Gradle somehow reports .gradle/caches/ as "always modified"
     rootSpec.into("$rootDir/lib")
     with(libs)
@@ -275,6 +296,7 @@ val copyLibs by tasks.registering(Sync::class) {
     }
     into("ext") {
         with(libsExt)
+        from(bundledJmeterPlugins)
         from(files(generatorJar)) {
             rename { "ApacheJMeter_generator.jar" }
         }
@@ -565,6 +587,7 @@ fun CrLfSpec.binaryLayout() = copySpec {
             with(libs)
             into("ext") {
                 with(libsExt)
+                from(bundledJmeterPlugins)
             }
         }
         printableDocumentation()

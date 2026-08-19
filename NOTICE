@@ -10,3 +10,6 @@ JMeter2 is an independent fork of Apache JMeter 5.6.3.
 It is not an official Apache Software Foundation product.
 
 Additional modifications in this fork are provided under the Apache License 2.0.
+
+This product bundles JMeter Plugins (jp@gc) from https://jmeter-plugins.org/
+(Custom Thread Groups, Graphs Basic, Plugins Manager), licensed under Apache License 2.0.

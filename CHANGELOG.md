@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Packaging
+- 发行包默认附带 jp@gc：Custom Thread Groups、Graphs Basic、Plugins Manager
+
 ### Usability
 - HTTP 请求 **消息体数据** 可查找、定位、替换（Ctrl+F、F3 / Shift+F3）；不必依赖结构树搜索
 - 结构树搜索的下一个 / 上一个会先在当前编辑器里逐处跳转
