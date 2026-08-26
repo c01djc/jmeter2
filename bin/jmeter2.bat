@@ -6,6 +6,21 @@ rem
 
 setlocal
 
+rem GUI double-click: hide the console immediately (no flash / no leftover CMD).
+rem Non-GUI (-n) and already-hidden relaunch skip this.
+if not defined JMETER2_HIDDEN (
+    set "JM_EARLY_GUI=1"
+    for %%A in (%*) do (
+        if /I "%%~A"=="-n" set "JM_EARLY_GUI="
+    )
+    if defined JM_EARLY_GUI (
+        if exist "%~dp0jmeter2-launch.vbs" (
+            wscript //nologo "%~dp0jmeter2-launch.vbs" %*
+            exit /b 0
+        )
+    )
+)
+
 rem Guess JMETER_HOME if not defined
 set "CURRENT_DIR=%cd%"
 if not "%JMETER_HOME%" == "" goto gotHome
@@ -70,7 +85,7 @@ if %current_minor% LSS %minimal_minor% (
 
 set JMETER_CMD_LINE_ARGS=%*
 
-rem Detect non-GUI (-n). GUI uses javaw + start so the CMD window closes immediately.
+rem Detect non-GUI (-n). GUI uses javaw (no console attached to the JVM).
 set "JM_GUI=1"
 for %%A in (%*) do (
     if /I "%%~A"=="-n" set "JM_GUI="
@@ -109,17 +124,12 @@ if not defined JMETER_COMPLETE_ARGS (
     set ARGS=
 )
 
-if defined JM_GUI (
-    if not defined JM_START set JM_START=start
-)
 if "%JM_START%" == "start" (
     set JM_START=start "JMeter2"
 )
 
 %JM_START% "%JM_LAUNCH%" %ARGS% %JVM_ARGS% -jar "%JMETER_BIN%ApacheJMeter.jar" %JMETER_CMD_LINE_ARGS%
 
-rem GUI was detached with "start" — close this console now
-if defined JM_GUI goto end
 if errorlevel 1 goto pause
 goto end
 

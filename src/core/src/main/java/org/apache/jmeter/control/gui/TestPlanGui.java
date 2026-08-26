@@ -18,13 +18,17 @@
 package org.apache.jmeter.control.gui;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.util.Arrays;
 import java.util.Collection;
 
+import javax.swing.BorderFactory;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
+import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
+import javax.swing.border.TitledBorder;
 
 import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.config.gui.ArgumentsPanel;
@@ -209,8 +213,17 @@ public class TestPlanGui extends AbstractJMeterGuiComponent {
         VerticalPanel southPanel = new VerticalPanel();
         JLabel gettingStarted = new JLabel(
                 "<html>" + JMeterUtils.getResString("test_plan_getting_started") + "</html>"); // $NON-NLS-1$
-        gettingStarted.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 0, 8, 0));
-        southPanel.add(gettingStarted);
+        gettingStarted.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
+        JPanel tipPanel = new JPanel(new BorderLayout());
+        tipPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createTitledBorder(
+                        BorderFactory.createLineBorder(new Color(180, 180, 180)),
+                        JMeterUtils.getResString("test_plan_getting_started_title"), // $NON-NLS-1$
+                        TitledBorder.LEFT,
+                        TitledBorder.TOP),
+                BorderFactory.createEmptyBorder(2, 2, 6, 2)));
+        tipPanel.add(gettingStarted, BorderLayout.CENTER);
+        southPanel.add(tipPanel);
         southPanel.add(serializedMode);
         southPanel.add(tearDownOnShutdown);
         southPanel.add(functionalMode);

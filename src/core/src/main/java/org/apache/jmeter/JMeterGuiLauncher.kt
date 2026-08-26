@@ -43,8 +43,11 @@ import org.apache.jorphan.gui.ComponentUtil
 import org.apache.jorphan.gui.JMeterUIDefaults
 import org.apache.jorphan.gui.ui.KerningOptimizer
 import org.slf4j.LoggerFactory
+import java.awt.Frame
 import java.awt.event.ActionEvent
 import java.io.File
+import javax.swing.JFrame
+import javax.swing.SwingUtilities
 
 public object JMeterGuiLauncher {
     private val log = LoggerFactory.getLogger(JMeterGuiLauncher::class.java)
@@ -122,9 +125,12 @@ public object JMeterGuiLauncher {
             ComponentUtil.centerComponentInWindow(main, 80)
             main.setLocationRelativeTo(splash)
         }
-        setProgress(82)
+        setProgress(93)
+        // Close splash before showing main — a modal/blocking splash leaves the frame in the taskbar.
+        splash.close()
+        yield()
         main.isVisible = true
-        main.toFront()
+        bringMainWindowToFront(main)
         instance.actionPerformed(ActionEvent(main, 1, ActionNames.ADD_ALL))
         if (testFile != null) {
             loadFile(testFile)
@@ -134,8 +140,31 @@ public object JMeterGuiLauncher {
             jTree.selectionPath = path
             FocusRequester.requestFocus(jTree)
         }
-        setProgress(93)
-        splash.close()
+        bringMainWindowToFront(main)
+    }
+
+    /**
+     * Ensure the main window is normal (not iconified) and actually in the foreground.
+     * Needed on Windows when launched via javaw / hidden console (focus-stealing rules).
+     */
+    private fun bringMainWindowToFront(main: JFrame) {
+        val show = Runnable {
+            val state = main.extendedState
+            if (state and Frame.ICONIFIED != 0) {
+                main.extendedState = state and Frame.ICONIFIED.inv()
+            }
+            main.isVisible = true
+            main.toFront()
+            main.requestFocus()
+            // Brief always-on-top toggle bypasses Windows focus-stealing prevention
+            main.isAlwaysOnTop = true
+            main.isAlwaysOnTop = false
+        }
+        if (SwingUtilities.isEventDispatchThread()) {
+            show.run()
+        } else {
+            SwingUtilities.invokeLater(show)
+        }
     }
 
     private suspend fun loadFile(testFile: String) {

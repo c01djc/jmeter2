@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## 1.0.4
+
+Based on Apache JMeter 5.6.3.
+
+### Usability
+- 补全一批高频中文界面文案（菜单、保存、代理、报告、测试器等）
+- 测试计划面板增加「快速开始」三步引导
+
+### Packaging
+- 修复 GUI 启动：去掉 `start` 闪烁；用隐藏控制台启动；启动画面关闭后再显示主窗口并置前，避免只出现在任务栏
+
 ## 1.0.3
 
 Based on Apache JMeter 5.6.3.

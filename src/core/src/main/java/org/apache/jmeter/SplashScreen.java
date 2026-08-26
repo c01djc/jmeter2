@@ -67,7 +67,7 @@ public class SplashScreen extends JDialog {
         progressBar.setForeground(PROGRESS_FG);
         progressBar.setBackground(SPLASH_BG);
         add(progressBar, BorderLayout.SOUTH);
-        setModalityType(ModalityType.APPLICATION_MODAL);
+        setModalityType(ModalityType.MODELESS);
         setAutoRequestFocus(true);
         setUndecorated(true);
         pack();
@@ -112,10 +112,22 @@ public class SplashScreen extends JDialog {
      * Close splash
      */
     public void close() {
-        SwingUtilities.invokeLater(() -> {
+        if (SwingUtilities.isEventDispatchThread()) {
             setVisible(false);
             dispose();
-        });
+        } else {
+            try {
+                SwingUtilities.invokeAndWait(() -> {
+                    setVisible(false);
+                    dispose();
+                });
+            } catch (Exception e) {
+                SwingUtilities.invokeLater(() -> {
+                    setVisible(false);
+                    dispose();
+                });
+            }
+        }
     }
 
     /**
