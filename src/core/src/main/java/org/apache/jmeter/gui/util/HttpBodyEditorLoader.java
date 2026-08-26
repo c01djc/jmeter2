@@ -99,7 +99,6 @@ final class HttpBodyEditorLoader {
                     if (guiPackage != null) {
                         guiPackage.markCurrentGuiDirty();
                     }
-                    editor.requestFocusInWindow();
                     if (manual) {
                         toolbar.showStatusMessage("search_body_format_done", true);
                     } else {

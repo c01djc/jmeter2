@@ -19,7 +19,9 @@ package org.apache.jmeter.gui.util;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Insets;
+import java.awt.KeyboardFocusManager;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.InputEvent;
@@ -28,6 +30,7 @@ import java.text.MessageFormat;
 import java.util.List;
 
 import javax.swing.AbstractAction;
+import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import javax.swing.Timer;
 import javax.swing.event.DocumentEvent;
@@ -44,6 +47,7 @@ import javax.swing.JTextField;
 import javax.swing.JToolBar;
 import javax.swing.KeyStroke;
 import javax.swing.UIManager;
+import javax.swing.text.DefaultCaret;
 
 import org.apache.jmeter.gui.GuiPackage;
 import org.apache.jmeter.gui.action.KeyStrokes;
@@ -66,7 +70,6 @@ public final class JSyntaxSearchToolBar implements ActionListener {
     public static final String FIND_PREVIOUS_ACTION = "FindPrevious";
     public static final String REPLACE_ACTION = "Replace";
     public static final String REPLACE_ALL_ACTION = "ReplaceAll";
-    public static final String FORMAT_ACTION = "FormatBody";
 
     private static final Color DIVIDER = new Color(0xD0, 0xD0, 0xD0);
 
@@ -83,8 +86,6 @@ public final class JSyntaxSearchToolBar implements ActionListener {
     private JCheckBox regexCB;
 
     private JCheckBox matchCaseCB;
-
-    private JButton formatButton;
 
     private Timer searchDebounceTimer;
 
@@ -151,11 +152,11 @@ public final class JSyntaxSearchToolBar implements ActionListener {
 
     private void init() {
         this.searchField = new JTextField();
-        regexCB = new JCheckBox(JMeterUtils.getResString("search_text_chkbox_regexp"));
         matchCaseCB = new JCheckBox(JMeterUtils.getResString("search_text_chkbox_case"));
         searchField.addActionListener(e -> find(true));
 
         if (!enableReplace) {
+            regexCB = new JCheckBox(JMeterUtils.getResString("search_text_chkbox_regexp"));
             JFactory.small(searchField);
             JFactory.small(regexCB);
             JFactory.small(matchCaseCB);
@@ -175,9 +176,10 @@ public final class JSyntaxSearchToolBar implements ActionListener {
         statusLabel = new JLabel(" ");
         statusLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
 
+        // Body editor: find / replace / case only (no regex / format controls)
         JPanel panel = new JPanel(new MigLayout(
                 "insets 8 10 8 10, fillx, gapx 8, gapy 6",
-                "[][grow,fill][][][][][][right]"));
+                "[][grow,fill][][][][right]"));
         panel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(0, 0, 1, 0, DIVIDER),
                 BorderFactory.createEmptyBorder()));
@@ -187,9 +189,6 @@ public final class JSyntaxSearchToolBar implements ActionListener {
         panel.add(createButton("search_next", FIND_ACTION, false));
         panel.add(createButton("search_previous", FIND_PREVIOUS_ACTION, false));
         panel.add(matchCaseCB);
-        panel.add(regexCB);
-        formatButton = createButton("search_format_body", FORMAT_ACTION, false);
-        panel.add(formatButton);
         panel.add(statusLabel, "wrap");
 
         panel.add(new JLabel(JMeterUtils.getResString("search_text_replace")));
@@ -207,7 +206,8 @@ public final class JSyntaxSearchToolBar implements ActionListener {
         searchDebounceTimer = new Timer(350, e -> {
             if (!searchField.getText().isEmpty()
                     && dataField.getDocument().getLength() < JSyntaxTextArea.HEAVY_BODY_CHARS) {
-                find(true);
+                // Preview matches while typing; never move focus out of the find box.
+                find(true, false);
             }
         });
         searchDebounceTimer.setRepeats(false);
@@ -227,8 +227,11 @@ public final class JSyntaxSearchToolBar implements ActionListener {
                 // attribute change only
             }
         });
-        regexCB.addActionListener(e -> searchDebounceTimer.restart());
-        matchCaseCB.addActionListener(e -> searchDebounceTimer.restart());
+        matchCaseCB.addActionListener(e -> {
+            // Re-search from the top so case option always takes effect immediately.
+            dataField.setCaretPosition(0);
+            searchDebounceTimer.restart();
+        });
     }
 
     JSyntaxTextArea getEditor() {
@@ -240,25 +243,16 @@ public final class JSyntaxSearchToolBar implements ActionListener {
             pendingFormatWorker.cancel(true);
         }
         pendingFormatWorker = null;
-        if (formatButton != null) {
-            formatButton.setEnabled(true);
-        }
     }
 
     void setPendingFormatWorker(SwingWorker<?, ?> worker) {
         cancelPendingFormat();
         pendingFormatWorker = worker;
-        if (formatButton != null) {
-            formatButton.setEnabled(false);
-        }
     }
 
     void clearPendingFormatWorker(SwingWorker<?, ?> worker) {
         if (pendingFormatWorker == worker) {
             pendingFormatWorker = null;
-            if (formatButton != null) {
-                formatButton.setEnabled(true);
-            }
         }
     }
 
@@ -316,7 +310,7 @@ public final class JSyntaxSearchToolBar implements ActionListener {
             private static final long serialVersionUID = 1L;
             @Override
             public void actionPerformed(ActionEvent e) {
-                find(true);
+                find(true, false);
             }
         });
         inputMap.put(shiftF3, "jmeter2-find-prev");
@@ -324,7 +318,7 @@ public final class JSyntaxSearchToolBar implements ActionListener {
             private static final long serialVersionUID = 1L;
             @Override
             public void actionPerformed(ActionEvent e) {
-                find(false);
+                find(false, false);
             }
         });
     }
@@ -343,41 +337,54 @@ public final class JSyntaxSearchToolBar implements ActionListener {
     public void actionPerformed(ActionEvent evt) {
         String command = evt.getActionCommand();
         if (FIND_ACTION.equals(command)) {
-            find(true);
+            find(true, false);
         } else if (FIND_PREVIOUS_ACTION.equals(command)) {
-            find(false);
+            find(false, false);
         } else if (REPLACE_ACTION.equals(command)) {
             replace(false);
         } else if (REPLACE_ALL_ACTION.equals(command)) {
             replace(true);
-        } else if (FORMAT_ACTION.equals(command)) {
-            formatBody();
         }
     }
 
-    private void formatBody() {
-        HttpBodyEditorLoader.formatManually(this);
+    private void find(boolean forward) {
+        find(forward, true);
     }
 
-    private void find(boolean forward) {
+    /**
+     * @param forward search direction
+     * @param allowEditorFocus when true (legacy find-only toolbar), may focus the editor
+     */
+    private void find(boolean forward, boolean allowEditorFocus) {
         String text = searchField.getText();
         toggleSearchField(searchField, true);
         if (text.isEmpty()) {
             updateStatus(0, 0);
             return;
         }
-        SearchContext context = createSearchContext(
-                text, forward, matchCaseCB.isSelected(), regexCB.isSelected());
-        context.setReplaceWith(replaceField == null ? "" : replaceField.getText());
-        boolean found = SearchEngine.find(dataField, context).wasFound();
-        if (!found && dataField.getDocument().getLength() > 0) {
-            int saved = dataField.getCaretPosition();
-            dataField.setCaretPosition(forward ? 0 : dataField.getDocument().getLength());
+
+        Component focusOwner = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
+        boolean keepToolbarFocus = enableReplace
+                && (focusOwner == searchField || focusOwner == replaceField);
+
+        boolean found;
+        if (enableReplace) {
+            found = findInBody(text, forward, matchCaseCB.isSelected());
+        } else {
+            SearchContext context = createSearchContext(
+                    text, forward, matchCaseCB.isSelected(), regexCB.isSelected());
+            context.setReplaceWith("");
             found = SearchEngine.find(dataField, context).wasFound();
-            if (!found) {
-                dataField.setCaretPosition(saved);
+            if (!found && dataField.getDocument().getLength() > 0) {
+                int saved = dataField.getCaretPosition();
+                dataField.setCaretPosition(forward ? 0 : dataField.getDocument().getLength());
+                found = SearchEngine.find(dataField, context).wasFound();
+                if (!found) {
+                    dataField.setCaretPosition(saved);
+                }
             }
         }
+
         toggleSearchField(searchField, found);
         if (enableReplace) {
             if (dataField.getDocument().getLength() < JSyntaxTextArea.HEAVY_BODY_CHARS) {
@@ -386,8 +393,70 @@ public final class JSyntaxSearchToolBar implements ActionListener {
                 updateStatus(0, 0);
             }
         }
-        if (found) {
+
+        if (keepToolbarFocus) {
+            // Selection in the body must not steal keystrokes from the find/replace fields.
+            final JTextField keep = focusOwner == replaceField ? replaceField : searchField;
+            SwingUtilities.invokeLater(keep::requestFocusInWindow);
+        } else if (found && allowEditorFocus && !enableReplace) {
             dataField.requestFocusInWindow();
+        }
+    }
+
+    /**
+     * Body find uses {@link SearchTextMatches} so case sensitivity matches the checkbox
+     * and status counter exactly.
+     */
+    private boolean findInBody(String needle, boolean forward, boolean matchCase) {
+        List<SearchTextMatches.Span> spans = SearchTextMatches.findAll(
+                dataField.getText(), needle, matchCase, false);
+        if (spans.isEmpty()) {
+            return false;
+        }
+
+        int selStart = dataField.getSelectionStart();
+        int selEnd = dataField.getSelectionEnd();
+        SearchTextMatches.Span target = null;
+
+        if (forward) {
+            for (SearchTextMatches.Span span : spans) {
+                if (span.getStart() > selStart || (span.getStart() == selStart && span.getEnd() > selEnd)) {
+                    target = span;
+                    break;
+                }
+            }
+            if (target == null) {
+                target = spans.get(0);
+            }
+        } else {
+            for (int i = spans.size() - 1; i >= 0; i--) {
+                SearchTextMatches.Span span = spans.get(i);
+                if (span.getStart() < selStart) {
+                    target = span;
+                    break;
+                }
+            }
+            if (target == null) {
+                target = spans.get(spans.size() - 1);
+            }
+        }
+
+        selectBodySpan(target);
+        return true;
+    }
+
+    private void selectBodySpan(SearchTextMatches.Span span) {
+        dataField.select(span.getStart(), span.getEnd());
+        if (dataField.getCaret() instanceof DefaultCaret) {
+            ((DefaultCaret) dataField.getCaret()).setSelectionVisible(true);
+        } else {
+            dataField.getCaret().setSelectionVisible(true);
+        }
+        try {
+            dataField.getCaret().setDot(span.getEnd());
+            dataField.getCaret().moveDot(span.getStart());
+        } catch (IllegalArgumentException ignored) {
+            dataField.select(span.getStart(), span.getEnd());
         }
     }
 
@@ -396,16 +465,23 @@ public final class JSyntaxSearchToolBar implements ActionListener {
         if (text.isEmpty() || replaceField == null) {
             return;
         }
-        SearchContext context = createSearchContext(
-                text, true, matchCaseCB.isSelected(), regexCB.isSelected());
-        context.setReplaceWith(replaceField.getText());
+        boolean matchCase = matchCaseCB.isSelected();
         if (all) {
-            SearchEngine.replaceAll(dataField, context);
+            replaceAllInBody(text, replaceField.getText(), matchCase);
         } else {
-            boolean replaced = SearchEngine.replace(dataField, context).getCount() > 0;
-            if (!replaced) {
-                find(true);
-                SearchEngine.replace(dataField, context);
+            String selected = dataField.getSelectedText();
+            boolean selectionMatches = selected != null && (matchCase
+                    ? selected.equals(text)
+                    : selected.equalsIgnoreCase(text));
+            if (!selectionMatches) {
+                findInBody(text, true, matchCase);
+                selected = dataField.getSelectedText();
+                selectionMatches = selected != null && (matchCase
+                        ? selected.equals(text)
+                        : selected.equalsIgnoreCase(text));
+            }
+            if (selectionMatches) {
+                dataField.replaceSelection(replaceField.getText());
             }
         }
         GuiPackage guiPackage = GuiPackage.getInstance();
@@ -417,7 +493,24 @@ public final class JSyntaxSearchToolBar implements ActionListener {
         } else {
             updateStatus(0, 0);
         }
-        dataField.requestFocusInWindow();
+        SwingUtilities.invokeLater(replaceField::requestFocusInWindow);
+    }
+
+    private void replaceAllInBody(String needle, String replacement, boolean matchCase) {
+        List<SearchTextMatches.Span> spans = SearchTextMatches.findAll(
+                dataField.getText(), needle, matchCase, false);
+        if (spans.isEmpty()) {
+            return;
+        }
+        StringBuilder out = new StringBuilder(dataField.getText());
+        for (int i = spans.size() - 1; i >= 0; i--) {
+            SearchTextMatches.Span span = spans.get(i);
+            out.replace(span.getStart(), span.getEnd(), replacement);
+        }
+        int caret = dataField.getCaretPosition();
+        dataField.setInitialText(out.toString());
+        dataField.setCaretPosition(Math.min(caret, out.length()));
+        dataField.refreshBodyEditorPresentation();
     }
 
     private void updateOccurrenceStatus() {
@@ -427,7 +520,7 @@ public final class JSyntaxSearchToolBar implements ActionListener {
             return;
         }
         List<SearchTextMatches.Span> spans = SearchTextMatches.findAll(
-                dataField.getText(), needle, matchCaseCB.isSelected(), regexCB.isSelected());
+                dataField.getText(), needle, matchCaseCB.isSelected(), false);
         int current = 0;
         int caret = dataField.getSelectionStart();
         for (int i = 0; i < spans.size(); i++) {

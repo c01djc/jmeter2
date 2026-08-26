@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 1.0.5
+
+Based on Apache JMeter 5.6.3.
+
+### Usability
+- 消息体查找：修正「区分大小写」；去掉正则 / 格式化按钮；输入关键字预览定位时焦点留在查找框，避免误改请求体
+
 ## 1.0.4
 
 Based on Apache JMeter 5.6.3.

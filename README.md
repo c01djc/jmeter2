@@ -7,7 +7,7 @@
 **JMeter2 is an independent fork. It is not an Apache Software Foundation release and is not affiliated with Apache JMeter.**
 
 Based on [Apache JMeter](https://jmeter.apache.org/) 5.6.3 (Apache License 2.0).  
-Current version: **1.0.4**
+Current version: **1.0.5**
 
 JMeter2 是基于 Apache JMeter 5.6.3 的独立开源 fork，**不是** Apache 官方发行版。相对上游，主要打磨了中文使用体验、界面易用性和部分兼容性问题。使用本项目遇到问题请在 **本仓库** 提 Issue，请不要报到 Apache JMeter 的 JIRA 或邮件列表。
 
@@ -30,9 +30,9 @@ JMeter2 是基于 Apache JMeter 5.6.3 的独立开源 fork，**不是** Apache �
 
 1. 在 **查找** 框输入内容，点 **下一个** / **上一个**（或回车）定位并选中  
 2. 在 **替换为** 框输入新内容，点 **替换**（当前这一处）或 **全部替换**  
-3. 可选：区分大小写、正则表达式  
+3. 可选：勾选 **区分大小写**  
 
-光标在消息体里时：**Ctrl+F** 跳到查找框，**F3** / **Shift+F3** 下一处 / 上一处。
+输入关键字时只会预览定位，焦点留在查找框，不会把字打进请求体。光标在消息体里时：**Ctrl+F** 跳到查找框，**F3** / **Shift+F3** 下一处 / 上一处。
 
 ## 运行
 
@@ -40,8 +40,8 @@ JMeter2 是基于 Apache JMeter 5.6.3 的独立开源 fork，**不是** Apache �
 
 需要 **Java 8+**（录制 HTTPS 建议用带 `keytool` 的 JDK）。
 
-1. 打开 [Releases](https://github.com/c01djc/jmeter2/releases)，下载 `jmeter2-1.0.4.zip` 并解压  
-2. 进入 `jmeter2-1.0.4/bin`  
+1. 打开 [Releases](https://github.com/c01djc/jmeter2/releases)，下载 `jmeter2-1.0.5.zip` 并解压  
+2. 进入 `jmeter2-1.0.5/bin`  
 3. Windows 运行 `jmeter2.bat`，Linux / macOS 运行 `./jmeter2.sh`
 
 无界面压测并出 HTML 报告：`jmeter2-report.bat` / `jmeter2-report.sh`。
@@ -56,7 +56,7 @@ JMeter2 是基于 Apache JMeter 5.6.3 的独立开源 fork，**不是** Apache �
 gradlew :src:dist:distZip -PchecksumIgnore -Prelease
 ```
 
-产物：`src/dist/build/distributions/jmeter2-1.0.4.zip`
+产物：`src/dist/build/distributions/jmeter2-1.0.5.zip`
 
 更多 Gradle 命令见 [gradle.md](gradle.md)。
 
