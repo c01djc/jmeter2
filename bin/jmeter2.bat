@@ -68,15 +68,25 @@ if %current_minor% LSS %minimal_minor% (
     goto pause
 )
 
+set JMETER_CMD_LINE_ARGS=%*
+
+rem Detect non-GUI (-n). GUI uses javaw + start so the CMD window closes immediately.
+set "JM_GUI=1"
+for %%A in (%*) do (
+    if /I "%%~A"=="-n" set "JM_GUI="
+)
+
 if not defined JM_LAUNCH (
-    set JM_LAUNCH=java.exe
+    if defined JM_GUI (
+        set JM_LAUNCH=javaw.exe
+    ) else (
+        set JM_LAUNCH=java.exe
+    )
 )
 
 if not defined JMETER_BIN (
     set JMETER_BIN=%~dp0
 )
-
-set JMETER_CMD_LINE_ARGS=%*
 
 if not defined HEAP (
     set HEAP=-Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m
@@ -99,13 +109,17 @@ if not defined JMETER_COMPLETE_ARGS (
     set ARGS=
 )
 
+if defined JM_GUI (
+    if not defined JM_START set JM_START=start
+)
 if "%JM_START%" == "start" (
     set JM_START=start "JMeter2"
 )
 
 %JM_START% "%JM_LAUNCH%" %ARGS% %JVM_ARGS% -jar "%JMETER_BIN%ApacheJMeter.jar" %JMETER_CMD_LINE_ARGS%
 
-if NOT errorlevel 0 goto pause
+rem GUI was detached with "start" — close this console now
+if defined JM_GUI goto end
 if errorlevel 1 goto pause
 goto end
 

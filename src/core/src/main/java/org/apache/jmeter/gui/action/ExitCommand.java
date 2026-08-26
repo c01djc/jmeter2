@@ -24,6 +24,7 @@ import java.util.Set;
 import javax.swing.JOptionPane;
 
 import org.apache.jmeter.gui.GuiPackage;
+import org.apache.jmeter.gui.UiWindowPreferences;
 import org.apache.jmeter.util.JMeterUtils;
 
 import com.google.auto.service.AutoService;
@@ -69,15 +70,22 @@ public class ExitCommand extends AbstractActionWithNoRunningTest {
                     JMeterUtils.getResString("save?"), // $NON-NLS-1$
                     JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
             if (chosenOption == JOptionPane.NO_OPTION) {
-                System.exit(0);
+                persistUiAndExit(guiPackage);
             } else if (chosenOption == JOptionPane.YES_OPTION) {
                 ActionRouter.getInstance().doActionNow(new ActionEvent(e.getSource(), e.getID(), ActionNames.SAVE));
                 if (!guiPackage.isDirty()) {
-                    System.exit(0);
+                    persistUiAndExit(guiPackage);
                 }
             }
         } else {
-            System.exit(0);
+            persistUiAndExit(guiPackage);
         }
+    }
+
+    private static void persistUiAndExit(GuiPackage guiPackage) {
+        if (guiPackage != null && guiPackage.getMainFrame() != null) {
+            UiWindowPreferences.save(guiPackage.getMainFrame());
+        }
+        System.exit(0);
     }
 }

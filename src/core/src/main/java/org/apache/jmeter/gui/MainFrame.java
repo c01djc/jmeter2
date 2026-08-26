@@ -570,6 +570,17 @@ public class MainFrame extends JFrame implements TestStateListener, Remoteable, 
 
         tree.setSelectionRow(1);
         addWindowListener(new WindowHappenings());
+        addComponentListener(new java.awt.event.ComponentAdapter() {
+            @Override
+            public void componentResized(java.awt.event.ComponentEvent e) {
+                rememberNormalWindowBounds();
+            }
+
+            @Override
+            public void componentMoved(java.awt.event.ComponentEvent e) {
+                rememberNormalWindowBounds();
+            }
+        });
         // Building is complete, register as listener
         GuiPackage.getInstance().registerAsListener();
         setTitle(DEFAULT_TITLE);
@@ -820,6 +831,13 @@ public class MainFrame extends JFrame implements TestStateListener, Remoteable, 
             log.debug("No keycode could be found for this actionEvent {}", actionEvent);
             return "NONE";
         }
+    }
+
+    private void rememberNormalWindowBounds() {
+        if ((getExtendedState() & MAXIMIZED_BOTH) != 0 || (getExtendedState() & ICONIFIED) != 0) {
+            return;
+        }
+        UiWindowPreferences.rememberNormalBounds(getBounds());
     }
 
     /**

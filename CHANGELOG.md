@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## 1.0.3
+
+Based on Apache JMeter 5.6.3.
+
+### Usability
+- 修复：缩放在界面初始化前恢复，关闭后再打开仍保持上次大小
+- 窗口大小 / 位置 / 最大化会记住
+
+### Packaging
+- Windows 界面模式用 `javaw` 启动并立刻关掉 CMD，避免关软件后黑窗口还在；命令行 `-n` 仍用 `java`
+
 ## 1.0.2
 
 Based on Apache JMeter 5.6.3.

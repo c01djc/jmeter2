@@ -18,6 +18,7 @@
 package org.apache.jmeter.gui;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.apache.jorphan.gui.JMeterUIDefaults;
 import org.junit.jupiter.api.Test;
@@ -35,6 +36,7 @@ class UiZoomPreferencesTest {
         JMeterUIDefaults.INSTANCE.setScale(1.0f);
         UiZoomPreferences.restoreSavedScale();
         assertEquals(1.21f, JMeterUIDefaults.INSTANCE.getScale(), 0.001f);
+        assertTrue(UiZoomPreferences.hasSavedScale());
         UiZoomPreferences.saveScale(1.0f);
     }
 }

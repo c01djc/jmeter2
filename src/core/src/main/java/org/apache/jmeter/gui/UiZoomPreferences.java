@@ -17,14 +17,20 @@
 
 package org.apache.jmeter.gui;
 
+import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 
 import org.apache.jorphan.gui.JMeterUIDefaults;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Persists UI font zoom between JMeter2 sessions (same mechanism as Look&amp;Feel).
+ * Must be restored <em>before</em> {@link JMeterUIDefaults#install()} so fonts pick up the scale.
  */
 public final class UiZoomPreferences {
+
+    private static final Logger log = LoggerFactory.getLogger(UiZoomPreferences.class);
 
     private static final Preferences PREFS = Preferences.userNodeForPackage(UiZoomPreferences.class);
 
@@ -45,17 +51,30 @@ public final class UiZoomPreferences {
         return clamp((float) PREFS.getDouble(SCALE_KEY, 1.0d));
     }
 
+    /**
+     * @return true when the user has previously saved a zoom level
+     */
+    public static boolean hasSavedScale() {
+        return PREFS.get(SCALE_KEY, null) != null;
+    }
+
     public static void saveScale(float scale) {
         PREFS.putDouble(SCALE_KEY, clamp(scale));
+        try {
+            PREFS.flush();
+        } catch (BackingStoreException e) {
+            log.warn("Could not persist UI zoom scale {}", scale, e);
+        }
     }
 
     /**
-     * Apply the last saved zoom after LaF / HiDPI setup.
+     * Apply the last saved zoom. Call before Look and Feel / font install.
      */
     public static void restoreSavedScale() {
         float saved = getSavedScale();
+        JMeterUIDefaults.INSTANCE.setScale(saved);
         if (Math.abs(saved - 1.0f) > 0.01f) {
-            JMeterUIDefaults.INSTANCE.setScale(saved);
+            log.info("Restored UI zoom scale: {}", saved);
         }
     }
 }

@@ -26,6 +26,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
 import org.apache.jmeter.gui.GuiPackage
 import org.apache.jmeter.gui.MainFrame
+import org.apache.jmeter.gui.UiWindowPreferences
 import org.apache.jmeter.gui.UiZoomPreferences
 import org.apache.jmeter.gui.action.ActionNames
 import org.apache.jmeter.gui.action.ActionRouter
@@ -73,6 +74,12 @@ public object JMeterGuiLauncher {
     private fun setupLaF() {
         KerningOptimizer.INSTANCE.maxTextLengthWithKerning =
             JMeterUtils.getPropDefault("text.kerning.max_document_size", 10000)
+        // HiDPI first (base), then absolute saved zoom overwrites when present.
+        // Must happen before install() so UIDefaults fonts use the final scale.
+        JMeterUtils.applyHiDPIOnFonts()
+        if (UiZoomPreferences.hasSavedScale()) {
+            UiZoomPreferences.restoreSavedScale()
+        }
         JMeterUIDefaults.INSTANCE.install()
         val jMeterLaf = LookAndFeelCommand.getPreferredLafCommand()
         try {
@@ -94,8 +101,6 @@ public object JMeterGuiLauncher {
             yield()
         }
         setProgress(1)
-        JMeterUtils.applyHiDPIOnFonts()
-        UiZoomPreferences.restoreSavedScale()
         log.debug("Setup tree")
         setProgress(5)
         val treeModel = JMeterTreeModel()
@@ -113,9 +118,11 @@ public object JMeterGuiLauncher {
         log.debug("constructing main frame")
         val main = MainFrame(treeModel, treeLis)
         setProgress(56)
-        ComponentUtil.centerComponentInWindow(main, 80)
+        if (!UiWindowPreferences.restore(main)) {
+            ComponentUtil.centerComponentInWindow(main, 80)
+            main.setLocationRelativeTo(splash)
+        }
         setProgress(82)
-        main.setLocationRelativeTo(splash)
         main.isVisible = true
         main.toFront()
         instance.actionPerformed(ActionEvent(main, 1, ActionNames.ADD_ALL))
