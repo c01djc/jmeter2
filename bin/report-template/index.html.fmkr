@@ -83,14 +83,15 @@
             </div>
         </nav>
         <div id="page-wrapper">
-            <div class="row">
-                <div class="col-lg-12">
+            <div class="jm2-dashboard">
+            <div class="row jm2-row">
+                <div class="col-lg-7 col-md-7">
                      <div class="panel panel-default" >
-                        <div class="panel-heading" style="text-align:center;">
+                        <div class="panel-heading">
                            <p class="dashboard-title" data-i18n="test_report_info">测试与报告信息</p>
                         </div>
                         <div class="panel-body">
-                        <table id="generalInfos" class="table table-bordered table-condensed " >
+                        <table id="generalInfos" class="table table-bordered table-condensed jm2-kv-table" >
                             <tr>
                                 <td data-i18n="source_file">源文件</td>
                                 <td>${testFile!""}</td>
@@ -118,71 +119,65 @@
                         </table>
                      </div>
                 </div>
-            </div>
-            <div class="row">
-                <div class="col-lg-6">
-                    <div class="panel panel-default" style="text-align:center;">
-                        <div class="panel-heading">
-                           <p class="dashboard-title"><a href="https://en.wikipedia.org/wiki/Apdex" target="_blank" data-i18n="apdex">APDEX（应用性能指数）</a></p>
-                        </div>
-                        <div class="panel-body">
-                            <section id="apdex" class="col-md-12 table-responsive">
-                                <table id="apdexTable" class="table table-bordered table-condensed tablesorter ">
-                                </table>
-                            </section>
-                        </div>
-                    </div>
                 </div>
-                <div class="col-lg-6" >
-                    <div class="panel panel-default" style="text-align:center;">
+                <div class="col-lg-5 col-md-5">
+                    <div class="panel panel-default jm2-summary-panel">
                         <div class="panel-heading">
                            <p class="dashboard-title" data-i18n="requests_summary">请求汇总</p>
                         </div>
-                           <div class="panel-body">
-                            <div class="flot-chart" style="height:200px;">
-                                <div class="flot-chart-content" id="flot-requests-summary" style="height:200px;"/>
+                        <div class="panel-body">
+                            <div class="flot-chart jm2-pie-wrap">
+                                <div class="flot-chart-content" id="flot-requests-summary"></div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-lg-12">
-                <div class="panel panel-default" style="text-align:center;">
-                       <div class="panel-heading" >
+
+            <div class="row jm2-row">
+                <div class="col-lg-12">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
                            <p class="dashboard-title" data-i18n="statistics">统计</p>
                        </div>
-                <div class="panel-body ">
-                    <section class="col-md-12 table-responsive">
-                        <table id="statisticsTable" class="table table-bordered table-condensed tablesorter " >
-                        </table>
-                    </section>
-                </div>
-            </div>
-            <div class="col-lg-12">
-                <div class="panel panel-default" style="text-align:center;">
-                    <div class="panel-heading">
-                        <p class="dashboard-title" data-i18n="errors">错误</p>
-                    </div>
-                    <div class="panel-body">
-                        <section class="col-md-12 table-responsive">
-                            <table id="errorsTable" class="table table-bordered table-condensed tablesorter ">
-                            </table>
-                        </section>
+                        <div class="panel-body">
+                            <section class="table-responsive jm2-stats-wrap">
+                                <table id="statisticsTable" class="table table-bordered table-condensed tablesorter jm2-data-table">
+                                </table>
+                            </section>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="col-lg-12">
-                <div class="panel panel-default" style="text-align:center;">
-                    <div class="panel-heading">
-                        <p class="dashboard-title" data-i18n="top5_errors">按取样器 Top 5 错误</p>
-                    </div>
-                    <div class="panel-body">
-                        <section class="col-md-12 table-responsive">
-                            <table id="top5ErrorsBySamplerTable" class="table table-bordered table-condensed tablesorter ">
-                            </table>
-                        </section>
+
+            <div class="row jm2-row">
+                <div class="col-lg-6 col-md-6">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <p class="dashboard-title" data-i18n="errors">错误</p>
+                        </div>
+                        <div class="panel-body">
+                            <section class="table-responsive">
+                                <table id="errorsTable" class="table table-bordered table-condensed tablesorter jm2-data-table">
+                                </table>
+                            </section>
+                        </div>
                     </div>
                 </div>
+                <div class="col-lg-6 col-md-6">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <p class="dashboard-title" data-i18n="top5_errors">按取样器 Top 5 错误</p>
+                        </div>
+                        <div class="panel-body">
+                            <section class="table-responsive">
+                                <table id="top5ErrorsBySamplerTable" class="table table-bordered table-condensed tablesorter jm2-data-table">
+                                </table>
+                            </section>
+                        </div>
+                    </div>
+                </div>
+            </div>
             </div>
         </div>
     </div>

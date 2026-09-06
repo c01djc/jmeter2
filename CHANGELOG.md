@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+## 1.0.6
+
+Based on Apache JMeter 5.6.3.
+
+### Usability
+- 聚合报告 / 汇总报告：面板不可见时不刷新表格，降低 DarkLaf 表头 NPE；清空改走 EDT
+
+### Reports
+- HTML 仪表盘去掉 APDEX 区块；布局收紧：信息与请求汇总并排、错误与 Top5 并排、表格更紧凑
+
+### Performance
+- 默认进一步精简 `.jtl` CSV 字段（保留时间戳/标签/耗时/成功/响应码；关闭 URL、线程名、bytes、latency 等），便于长时间稳定性测试控制结果文件体积；需要时在 `user.properties` 中按项重新打开
+
 ## 1.0.5
 
 Based on Apache JMeter 5.6.3.

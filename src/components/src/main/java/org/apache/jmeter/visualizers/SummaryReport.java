@@ -191,15 +191,19 @@ public class SummaryReport extends AbstractVisualizer implements Clearable, Acti
         clearData();
         init();
         new Timer(REFRESH_PERIOD, e -> {
-            if (!dataChanged) {
+            if (!dataChanged || !isDisplayable() || !isShowing()) {
                 return;
             }
             dataChanged = false;
-            synchronized (lock) {
-                while (!newRows.isEmpty()) {
-                    model.insertRow(newRows.pop(), model.getRowCount() - 1);
+            try {
+                synchronized (lock) {
+                    while (!newRows.isEmpty()) {
+                        model.insertRow(newRows.pop(), model.getRowCount() - 1);
+                    }
+                    model.fireTableDataChanged();
                 }
-                model.fireTableDataChanged();
+            } catch (RuntimeException ex) {
+                dataChanged = true;
             }
         }).start();
     }
@@ -248,15 +252,22 @@ public class SummaryReport extends AbstractVisualizer implements Clearable, Acti
      */
     @Override
     public void clearData() {
-        //Synch is needed because a clear can occur while add occurs
-        synchronized (lock) {
-            model.clearData();
-            newRows.clear();
-            tableRows.clear();
-            tableRows.put(TOTAL_ROW_LABEL, new Calculator(TOTAL_ROW_LABEL));
-            model.addRow(tableRows.get(TOTAL_ROW_LABEL));
+        Runnable clear = () -> {
+            //Synch is needed because a clear can occur while add occurs
+            synchronized (lock) {
+                model.clearData();
+                newRows.clear();
+                tableRows.clear();
+                tableRows.put(TOTAL_ROW_LABEL, new Calculator(TOTAL_ROW_LABEL));
+                model.addRow(tableRows.get(TOTAL_ROW_LABEL));
+            }
+            dataChanged = false;
+        };
+        if (javax.swing.SwingUtilities.isEventDispatchThread()) {
+            clear.run();
+        } else {
+            javax.swing.SwingUtilities.invokeLater(clear);
         }
-        dataChanged = true;
     }
 
     /**

@@ -192,21 +192,7 @@ $(document).ready(function() {
         }
     };
 
-    // Creates APDEX table
-    createTable($("#apdexTable"), ${apdexSummary!"{}"}, function(index, item){
-        switch(index){
-            case 0:
-                item = item.toFixed(3);
-                break;
-            case 1:
-            case 2:
-                item = formatDuration(item);
-                break;
-        }
-        return item;
-    }, [[0, 0]], 3);
-
-    // Create statistics table
+    // Creates statistics table
     createTable($("#statisticsTable"), ${statisticsSummary!"{}"}, function(index, item){
         switch(index){
             // Errors pct

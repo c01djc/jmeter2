@@ -139,12 +139,20 @@ public class StatVisualizer extends AbstractVisualizer implements Clearable, Act
      */
     @Override
     public void clearData() {
-        synchronized (lock) {
-            model.clearData();
-            tableRows.clear();
-            newRows.clear();
-            tableRows.put(TOTAL_ROW_LABEL, new SamplingStatCalculator(TOTAL_ROW_LABEL));
-            model.addRow(tableRows.get(TOTAL_ROW_LABEL));
+        Runnable clear = () -> {
+            synchronized (lock) {
+                model.clearData();
+                tableRows.clear();
+                newRows.clear();
+                tableRows.put(TOTAL_ROW_LABEL, new SamplingStatCalculator(TOTAL_ROW_LABEL));
+                model.addRow(tableRows.get(TOTAL_ROW_LABEL));
+            }
+            dataChanged = false;
+        };
+        if (javax.swing.SwingUtilities.isEventDispatchThread()) {
+            clear.run();
+        } else {
+            javax.swing.SwingUtilities.invokeLater(clear);
         }
     }
 
@@ -180,16 +188,23 @@ public class StatVisualizer extends AbstractVisualizer implements Clearable, Act
         this.add(opts,BorderLayout.SOUTH);
 
         new Timer(REFRESH_PERIOD, e -> {
-            if (!dataChanged) {
+            // Skip refresh when this panel is not on screen (avoids DarkLaf header NPE
+            // after switching nodes / clearing while a paint is queued).
+            if (!dataChanged || !isDisplayable() || !isShowing()) {
                 return;
             }
             dataChanged = false;
-            synchronized (lock) {
-                while (!newRows.isEmpty()) {
-                    model.insertRow(newRows.pop(), model.getRowCount() - 1);
+            try {
+                synchronized (lock) {
+                    while (!newRows.isEmpty()) {
+                        model.insertRow(newRows.pop(), model.getRowCount() - 1);
+                    }
                 }
+                model.fireTableDataChanged();
+            } catch (RuntimeException ex) {
+                // DarkLaf 2.7.x may NPE if JTableHeader was uninstalled mid-paint
+                dataChanged = true;
             }
-            model.fireTableDataChanged();
         }).start();
     }
 
