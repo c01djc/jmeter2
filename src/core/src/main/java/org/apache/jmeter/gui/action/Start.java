@@ -179,6 +179,21 @@ public class Start extends AbstractAction {
         GuiPackage gui = GuiPackage.getInstance();
         HashTree testTree = gui.getTreeModel().getTestPlan();
 
+        // Ensure Test Plan root is enabled; a disabled root is stripped by convertSubTree
+        // and later causes ArrayIndexOutOfBoundsException on getArray()[0].
+        Object[] planRoots = testTree.getArray();
+        if (planRoots != null) {
+            for (Object root : planRoots) {
+                if (root instanceof TestPlan && !((TestPlan) root).isEnabled()) {
+                    ((TestPlan) root).setEnabled(true);
+                    JMeterTreeNode treeRoot = gui.getTreeModel().getNodeOf((TestElement) root);
+                    if (treeRoot != null) {
+                        treeRoot.setEnabled(true);
+                    }
+                }
+            }
+        }
+
         // We need to make this conversion before removing any Thread Group as 1 thread Group running may
         // reference another one (not running) using ModuleController
         // We don't clone as we'll be doing it later AND we cannot clone before we have removed the unselected ThreadGroups
@@ -186,10 +201,18 @@ public class Start extends AbstractAction {
         if(threadGroupsToRun != null && threadGroupsToRun.length>0) {
             keepOnlySelectedThreadGroupsInHashTree(treeToUse, threadGroupsToRun);
         }
-        treeToUse.add(treeToUse.getArray()[0], gui.getMainFrame());
+        Object[] roots = treeToUse.getArray();
+        if (roots == null || roots.length == 0) {
+            JOptionPane.showMessageDialog(gui.getMainFrame(),
+                    JMeterUtils.getResString("start_no_test_plan"), // $NON-NLS-1$
+                    JMeterUtils.getResString("error_occurred"), // $NON-NLS-1$
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        treeToUse.add(roots[0], gui.getMainFrame());
         if (log.isDebugEnabled()) {
             log.debug("test plan before cloning is running version: {}",
-                    ((TestPlan) treeToUse.getArray()[0]).isRunningVersion());
+                    ((TestPlan) roots[0]).isRunningVersion());
         }
 
         ListedHashTree clonedTree = cloneTree(treeToUse, runMode);

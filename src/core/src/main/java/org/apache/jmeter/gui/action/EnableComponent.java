@@ -23,6 +23,7 @@ import java.util.Set;
 
 import org.apache.jmeter.gui.GuiPackage;
 import org.apache.jmeter.gui.tree.JMeterTreeNode;
+import org.apache.jmeter.testelement.TestPlan;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,6 +66,10 @@ public class EnableComponent extends AbstractAction {
     private static void enableComponents(JMeterTreeNode[] nodes, boolean enable) {
         GuiPackage pack = GuiPackage.getInstance();
         for (JMeterTreeNode node : nodes) {
+            if (!enable && isTestPlanRoot(node)) {
+                log.info("Ignoring disable for Test Plan root node");
+                continue;
+            }
             node.setEnabled(enable);
             pack.getGui(node.getTestElement()).setEnabled(enable);
         }
@@ -73,10 +78,23 @@ public class EnableComponent extends AbstractAction {
     private static void toggleComponents(JMeterTreeNode[] nodes) {
         GuiPackage pack = GuiPackage.getInstance();
         for (JMeterTreeNode node : nodes) {
+            if (isTestPlanRoot(node)) {
+                // Keep Test Plan always enabled (toggle would disable it).
+                if (!node.isEnabled()) {
+                    node.setEnabled(true);
+                    pack.getGui(node.getTestElement()).setEnabled(true);
+                }
+                log.info("Ignoring toggle for Test Plan root node");
+                continue;
+            }
             boolean enable = !node.isEnabled();
             node.setEnabled(enable);
             pack.getGui(node.getTestElement()).setEnabled(enable);
         }
+    }
+
+    private static boolean isTestPlanRoot(JMeterTreeNode node) {
+        return node != null && node.getTestElement() instanceof TestPlan;
     }
 
     /**

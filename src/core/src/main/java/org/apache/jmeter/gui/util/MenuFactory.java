@@ -315,16 +315,21 @@ public final class MenuFactory {
 
         addSeparator(menu);
 
-        JMenuItem disabled = makeMenuItemRes("disable", ActionNames.DISABLE);// $NON-NLS-1$
-        JMenuItem enabled = makeMenuItemRes("enable", ActionNames.ENABLE);// $NON-NLS-1$
-        boolean isEnabled = GuiPackage.getInstance().getTreeListener().getCurrentNode().isEnabled();
-        disabled.setEnabled(isEnabled);
-        enabled.setEnabled(!isEnabled);
-        menu.add(enabled);
-        menu.add(disabled);
-        JMenuItem toggle = makeMenuItemRes("toggle", ActionNames.TOGGLE, KeyStrokes.TOGGLE);// $NON-NLS-1$
-        menu.add(toggle);
-        addSeparator(menu);
+        // Test Plan root must stay enabled: disabling it empties the run tree and crashes Start.
+        boolean isTestPlanRoot = GuiPackage.getInstance().getTreeListener()
+                .getCurrentNode().getTestElement() instanceof org.apache.jmeter.testelement.TestPlan;
+        if (!isTestPlanRoot) {
+            JMenuItem disabled = makeMenuItemRes("disable", ActionNames.DISABLE);// $NON-NLS-1$
+            JMenuItem enabled = makeMenuItemRes("enable", ActionNames.ENABLE);// $NON-NLS-1$
+            boolean isEnabled = GuiPackage.getInstance().getTreeListener().getCurrentNode().isEnabled();
+            disabled.setEnabled(isEnabled);
+            enabled.setEnabled(!isEnabled);
+            menu.add(enabled);
+            menu.add(disabled);
+            JMenuItem toggle = makeMenuItemRes("toggle", ActionNames.TOGGLE, KeyStrokes.TOGGLE);// $NON-NLS-1$
+            menu.add(toggle);
+            addSeparator(menu);
+        }
         menu.add(makeMenuItemRes("help", ActionNames.HELP));// $NON-NLS-1$
     }
 

@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 1.0.7
+
+Based on Apache JMeter 5.6.3.
+
+### Usability
+- 测试计划根节点禁止禁用/切换启用（避免置灰后启动报 ArrayIndexOutOfBoundsException）；启动时若根节点被禁用会自动恢复
+
+### Reports
+- HTML 统计「总计」行：结果中存在事务控制器样本时优先按事务控制器汇总响应时间；否则仍按普通取样器汇总
+
 ## 1.0.6
 
 Based on Apache JMeter 5.6.3.

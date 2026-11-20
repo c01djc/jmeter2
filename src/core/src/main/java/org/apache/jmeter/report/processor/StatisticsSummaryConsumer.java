@@ -39,6 +39,10 @@ import org.apache.jmeter.util.JMeterUtils;
  *      <li>min</li>
  *      <li>max</li>
  * </ul>
+ * <p>
+ * JMeter2: when Transaction Controller samples exist, the Overall / Total row
+ * prefers those controller timings; otherwise it keeps the classic sampler-only
+ * overall (controllers excluded).
  *
  * @since 3.0
  */
@@ -55,6 +59,14 @@ public class StatisticsSummaryConsumer extends
     private static final double PERCENTILE_INDEX2 = new BigDecimal(PCT2_LABEL).doubleValue();
     private static final double PERCENTILE_INDEX3 = new BigDecimal(PCT3_LABEL).doubleValue();
 
+    /** Overall built from non-controller samples (classic behaviour). */
+    private StatisticsSummaryData samplerOverall;
+
+    /** Overall built from Transaction Controller samples when present. */
+    private StatisticsSummaryData controllerOverall;
+
+    private boolean seenControllerSample;
+
     /**
      * Instantiates a new statistics summary consumer.
      */
@@ -62,16 +74,11 @@ public class StatisticsSummaryConsumer extends
         super(true);
     }
 
-    /**
-     *
-     * @param sample {@link Sample}
-     * @param data {@link StatisticsSummaryData}
-     * @param isOverall boolean indicating if aggregation concerns the Overall results in which case we ignore Transaction Controller's SampleResult
-     */
-    private static void aggregateSample(Sample sample, StatisticsSummaryData data, boolean isOverall) {
-        if(isOverall && sample.isController()) {
-            return;
-        }
+    private static StatisticsSummaryData newSummaryData() {
+        return new StatisticsSummaryData(PERCENTILE_INDEX1, PERCENTILE_INDEX2, PERCENTILE_INDEX3);
+    }
+
+    private static void aggregateSample(Sample sample, StatisticsSummaryData data) {
         data.incTotal();
         data.incBytes(sample.getReceivedBytes());
         data.incSentBytes(sample.getSentBytes());
@@ -104,25 +111,54 @@ public class StatisticsSummaryConsumer extends
      */
     @Override
     protected void updateData(SummaryInfo info, Sample sample) {
-        SummaryInfo overallInfo = getOverallInfo();
-        StatisticsSummaryData overallData = overallInfo.getData();
-        if (overallData == null) {
-            overallData = new StatisticsSummaryData(PERCENTILE_INDEX1,
-                            PERCENTILE_INDEX2, PERCENTILE_INDEX3);
-            overallInfo.setData(overallData);
+        if (sample.isEmptyController()) {
+            return;
         }
 
         StatisticsSummaryData data = info.getData();
         if (data == null) {
-            data = new StatisticsSummaryData(PERCENTILE_INDEX1,
-                        PERCENTILE_INDEX2, PERCENTILE_INDEX3);
+            data = newSummaryData();
             info.setData(data);
         }
+        aggregateSample(sample, data);
 
-        if(!sample.isEmptyController()) {
-            aggregateSample(sample, data, false);
-            aggregateSample(sample, overallData, true);
+        if (sample.isController()) {
+            seenControllerSample = true;
+            if (controllerOverall == null) {
+                controllerOverall = newSummaryData();
+            }
+            aggregateSample(sample, controllerOverall);
+        } else {
+            if (samplerOverall == null) {
+                samplerOverall = newSummaryData();
+            }
+            aggregateSample(sample, samplerOverall);
         }
+
+        // Keep overallInfo in sync for interim readers; finalized in stopConsuming.
+        getOverallInfo().setData(chooseOverall());
+    }
+
+    private StatisticsSummaryData chooseOverall() {
+        if (seenControllerSample && controllerOverall != null) {
+            return controllerOverall;
+        }
+        return samplerOverall;
+    }
+
+    @Override
+    public void startConsuming() {
+        samplerOverall = null;
+        controllerOverall = null;
+        seenControllerSample = false;
+        getOverallInfo().setData(null);
+        super.startConsuming();
+    }
+
+    @Override
+    public void stopConsuming() {
+        getOverallInfo().setData(chooseOverall());
+        super.stopConsuming();
     }
 
     /*
