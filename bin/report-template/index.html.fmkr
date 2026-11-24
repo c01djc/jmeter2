@@ -134,13 +134,20 @@
                 </div>
             </div>
 
-            <div class="row jm2-row">
+            <div class="row jm2-row" id="section-statistics">
                 <div class="col-lg-12">
                     <div class="panel panel-default">
                         <div class="panel-heading">
                            <p class="dashboard-title" data-i18n="statistics">统计</p>
                        </div>
                         <div class="panel-body">
+                            <div class="jm2-stats-toolbar">
+                                <p class="jm2-hint" data-i18n="errors_click_hint">失败数 &gt; 0 时可点击名称或失败数，跳转到下方该接口的错误明细。</p>
+                                <label class="jm2-errors-only">
+                                    <input type="checkbox" id="jm2ErrorsOnlyFilter">
+                                    <span data-i18n="errors_only_filter">只看有错误的接口</span>
+                                </label>
+                            </div>
                             <section class="table-responsive jm2-stats-wrap">
                                 <table id="statisticsTable" class="table table-bordered table-condensed tablesorter jm2-data-table">
                                 </table>
@@ -152,7 +159,7 @@
 
             <div class="row jm2-row">
                 <div class="col-lg-6 col-md-6">
-                    <div class="panel panel-default">
+                    <div class="panel panel-default" id="section-errors">
                         <div class="panel-heading">
                             <p class="dashboard-title" data-i18n="errors">错误</p>
                         </div>
@@ -165,7 +172,7 @@
                     </div>
                 </div>
                 <div class="col-lg-6 col-md-6">
-                    <div class="panel panel-default">
+                    <div class="panel panel-default" id="section-top5-errors">
                         <div class="panel-heading">
                             <p class="dashboard-title" data-i18n="top5_errors">按取样器 Top 5 错误</p>
                         </div>

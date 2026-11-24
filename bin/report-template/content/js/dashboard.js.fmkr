@@ -238,8 +238,108 @@ $(document).ready(function() {
         return item;
     }, [[0, 0]], 0);
 
+    enhanceErrorNavigation();
+
     if (window.JM2I18n) {
         JM2I18n.apply();
     }
 
 });
+
+function jm2EscapeHtml(text) {
+    return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+}
+
+function jm2SlugLabel(label) {
+    return encodeURIComponent(String(label)).replace(/%/g, "_");
+}
+
+/**
+ * Make FAIL counts clickable and jump to the matching Top5-by-sampler row.
+ * Also supports filtering statistics to error-only rows.
+ */
+function enhanceErrorNavigation() {
+    var tip = window.JM2I18n ? JM2I18n.t("errors_click_tip") : "Click to jump to error details";
+
+    $("#top5ErrorsBySamplerTable tbody tr").each(function () {
+        var $cells = $(this).children("td");
+        if ($cells.length === 0) {
+            return;
+        }
+        var label = $.trim($cells.eq(0).text());
+        if (!label) {
+            return;
+        }
+        $(this).attr("data-jm2-label", label);
+        $(this).attr("id", "jm2-top5-" + jm2SlugLabel(label));
+    });
+
+    $("#statisticsTable tbody tr").each(function () {
+        var $cells = $(this).children("td");
+        if ($cells.length < 3) {
+            return;
+        }
+        var label = $.trim($cells.eq(0).text());
+        // FAIL may already be wrapped in a link if enhance re-runs; parse digits only
+        var fails = parseInt($.trim($cells.eq(2).text()).replace(/[^\d-]/g, ""), 10);
+        if (!label || isNaN(fails)) {
+            return;
+        }
+        $(this).attr("data-jm2-label", label);
+        $(this).attr("data-jm2-fails", fails);
+        if (fails > 0) {
+            $(this).addClass("jm2-has-errors");
+            var $nameLink = $("<a/>", {
+                "class": "jm2-error-jump",
+                href: "#section-top5-errors",
+                title: tip,
+                text: label
+            }).attr("data-label", label);
+            var $failLink = $("<a/>", {
+                "class": "jm2-error-jump jm2-fail-badge",
+                href: "#section-top5-errors",
+                title: tip,
+                text: String(fails)
+            }).attr("data-label", label);
+            $cells.eq(0).empty().append($nameLink);
+            $cells.eq(2).empty().append($failLink);
+        }
+    });
+
+    $(document).off("click.jm2ErrorJump").on("click.jm2ErrorJump", "a.jm2-error-jump", function (ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        var label = $(this).attr("data-label");
+        var $target = $("#top5ErrorsBySamplerTable tbody tr").filter(function () {
+            return $(this).attr("data-jm2-label") === label;
+        }).first();
+        var $section = $("#section-top5-errors");
+        var $scrollTo = $target.length ? $target : $section;
+        if ($scrollTo.length) {
+            var top = $scrollTo.offset().top - 48;
+            $("html, body").stop(true).animate({ scrollTop: Math.max(0, top) }, 280);
+        }
+        $("#top5ErrorsBySamplerTable tbody tr").removeClass("jm2-row-flash");
+        if ($target.length) {
+            // force reflow so re-clicking the same row restarts the flash
+            void $target[0].offsetWidth;
+            $target.addClass("jm2-row-flash");
+            clearTimeout(window._jm2FlashTimer);
+            window._jm2FlashTimer = setTimeout(function () {
+                $target.removeClass("jm2-row-flash");
+            }, 2800);
+        }
+    });
+
+    $("#jm2ErrorsOnlyFilter").off("change.jm2ErrorsOnly").on("change.jm2ErrorsOnly", function () {
+        var onlyErrors = $(this).is(":checked");
+        $("#statisticsTable tbody tr").each(function () {
+            var fails = parseInt($(this).attr("data-jm2-fails") || "0", 10);
+            $(this).toggle(!onlyErrors || fails > 0);
+        });
+    });
+}

@@ -318,3 +318,80 @@ html, body {
         max-width: 240px;
     }
 }
+
+/* Statistics error navigation */
+.jm2-stats-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 0 0 10px;
+    min-height: 22px;
+}
+
+.jm2-errors-only {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    flex-shrink: 0;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1;
+    color: var(--jm2-muted);
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.jm2-errors-only input {
+    margin: 0;
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    vertical-align: middle;
+}
+
+.jm2-hint {
+    margin: 0;
+    flex: 1;
+    min-width: 0;
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--jm2-muted);
+}
+
+#statisticsTable tbody tr.jm2-has-errors > td {
+    background: #fff5f5 !important;
+}
+
+a.jm2-error-jump {
+    color: var(--jm2-fail);
+    font-weight: 600;
+    text-decoration: none;
+    border-bottom: 1px dashed rgba(224, 49, 49, 0.45);
+}
+
+a.jm2-error-jump:hover {
+    color: #c92a2a;
+    border-bottom-style: solid;
+}
+
+a.jm2-fail-badge {
+    display: inline-block;
+    min-width: 1.6em;
+    padding: 1px 8px;
+    border-radius: 999px;
+    background: var(--jm2-accent-soft);
+    border-bottom: 0 !important;
+}
+
+#top5ErrorsBySamplerTable tbody tr.jm2-row-flash > td {
+    background-color: #ffe3e3 !important;
+    box-shadow: inset 3px 0 0 #e03131;
+    animation: jm2Flash 0.9s ease-in-out 3;
+}
+
+@keyframes jm2Flash {
+    0%, 100% { background-color: #fff5f5; }
+    50% { background-color: #ffc9c9; }
+}
