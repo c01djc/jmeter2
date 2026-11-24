@@ -320,13 +320,11 @@ html, body {
 }
 
 /* Statistics error navigation */
-.jm2-stats-toolbar {
+.jm2-panel-heading-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    margin: 0 0 10px;
-    min-height: 22px;
 }
 
 .jm2-errors-only {
@@ -335,12 +333,22 @@ html, body {
     gap: 6px;
     margin: 0;
     flex-shrink: 0;
+    padding: 4px 10px;
+    border: 1px solid var(--jm2-line);
+    border-radius: 6px;
+    background: #fff;
     font-size: 12px;
-    font-weight: 500;
-    line-height: 1;
-    color: var(--jm2-muted);
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--jm2-ink);
     cursor: pointer;
     white-space: nowrap;
+    user-select: none;
+}
+
+.jm2-errors-only:hover {
+    border-color: var(--jm2-accent);
+    color: var(--jm2-accent);
 }
 
 .jm2-errors-only input {
@@ -348,13 +356,11 @@ html, body {
     width: 14px;
     height: 14px;
     flex-shrink: 0;
-    vertical-align: middle;
+    accent-color: var(--jm2-accent);
 }
 
 .jm2-hint {
-    margin: 0;
-    flex: 1;
-    min-width: 0;
+    margin: 0 0 10px;
     font-size: 12px;
     line-height: 1.4;
     color: var(--jm2-muted);
